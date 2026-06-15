@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="VinhVideo">
+  <rect width="192" height="192" rx="42" fill="#05070d"/>
+  <circle cx="70" cy="52" r="62" fill="#26d6ff" opacity=".42"/>
+  <circle cx="126" cy="132" r="74" fill="#ff2d75" opacity=".52"/>
+  <rect x="40" y="48" width="112" height="96" rx="26" fill="#101827" stroke="rgba(255,255,255,.32)" stroke-width="4"/>
+  <path d="M82 74v44l39-22z" fill="#fff"/>
+  <text x="96" y="165" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="800" text-anchor="middle">VINH</text>
+</svg>

@@ -6,44 +6,112 @@
   <meta name="theme-color" content="#05070d" />
   <title>VinhVideo Offline</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css?v=1" />
+  <link rel="stylesheet" href="style.css?v=1.3.0" />
 </head>
 <body>
-  <main class="app">
+  <main id="appRoot" class="app">
     <header class="topbar">
-      <button id="menuBtn" class="pill">☰ Thư viện</button>
+      <button id="menuBtn" class="pill" type="button">☰ Thư viện</button>
       <div class="brand">VINHVIDEO</div>
-      <button id="muteBtn" class="pill">🔇</button>
+      <button id="muteBtn" class="pill" type="button">🔇</button>
     </header>
+
     <section id="empty" class="empty">
       <div class="logo">▶</div>
       <h1>VinhVideo Offline</h1>
       <p>Chọn video từ điện thoại, lưu offline và xem kiểu TikTok.</p>
-      <button id="emptyAddBtn" class="primary">+ Thêm video</button>
-      <small>Sau khi thêm video, lần sau có thể xem lại không cần internet.</small>
+      <button id="emptyAddBtn" class="primary" type="button">+ Thêm video</button>
+      <small>IndexedDB giúp xem offline, nhưng không thay thế bản video gốc.</small>
     </section>
-    <section id="feed" class="feed"></section>
+
+    <section id="feed" class="feed" aria-label="Video feed"></section>
+
     <aside id="drawer" class="drawer">
       <div class="panel">
         <div class="panelHead">
-          <div><h2>Thư viện video</h2><p id="storageInfo">Đang tải...</p></div>
-          <button id="closeBtn" class="iconBtn">×</button>
+          <div>
+            <h2>Thư viện video</h2>
+            <p id="storageInfo">Đang tải...</p>
+            <small id="appVersion">VinhVideo Offline v1.3.0</small>
+          </div>
+          <button id="closeBtn" class="iconBtn" type="button" aria-label="Đóng">×</button>
         </div>
+
         <div class="actionsRow">
           <label class="blockBtn primary">+ Chọn video<input id="fileInput" hidden type="file" accept="video/*" multiple /></label>
           <label class="blockBtn">+ Chọn thư mục<input id="folderInput" hidden type="file" accept="video/*" webkitdirectory multiple /></label>
         </div>
-        <div class="hint">Video được lưu trong trình duyệt bằng IndexedDB. iPhone/iPad có thể giới hạn dung lượng nếu video quá nặng.</div>
-        <div class="filterRow">
-          <button id="allBtn" class="small active">Tất cả</button>
-          <button id="favBtn" class="small">Yêu thích</button>
-          <button id="exportBtn" class="small">Export list</button>
+
+        <section class="storageHealth" aria-label="Storage health">
+          <div class="healthGrid">
+            <div><span>Tổng video</span><strong id="healthVideoCount">0</strong></div>
+            <div><span>Video offline</span><strong id="healthOfflineSize">0 MB</strong></div>
+            <div><span>Đang dùng</span><strong id="healthUsage">Đang tải...</strong></div>
+            <div><span>Quota ước tính</span><strong id="healthQuota">Đang tải...</strong></div>
+            <div><span>Đã dùng quota</span><strong id="healthPercent">Không rõ</strong></div>
+            <div><span>Mức an toàn</span><strong id="healthLevel">Đang tải...</strong></div>
+          </div>
+          <div class="persistRow">
+            <span>Persistent storage</span>
+            <strong id="healthPersist">Đang tải...</strong>
+            <button id="persistBtn" class="mini" type="button" hidden>Yêu cầu bảo vệ bộ nhớ</button>
+          </div>
+          <div id="healthWarning" class="storageWarning" hidden></div>
+        </section>
+
+        <label class="toggleRow">
+          <span>
+            <strong>Chế độ máy yếu</strong>
+            <small>Ít preload, ít blur, giữ ít video trong RAM hơn.</small>
+          </span>
+          <input id="lowEndToggle" type="checkbox" />
+        </label>
+
+        <div class="libraryTools">
+          <input id="searchInput" type="search" placeholder="Tìm title, file, note, tag..." />
+          <select id="sortSelect">
+            <option value="newest">Mới nhất</option>
+            <option value="oldest">Cũ nhất</option>
+            <option value="largest">Dung lượng lớn nhất</option>
+            <option value="az">Tên A-Z</option>
+            <option value="recent">Xem gần đây</option>
+          </select>
+          <select id="statusFilter">
+            <option value="all">Tất cả</option>
+            <option value="fav">Yêu thích</option>
+            <option value="seen">Đã xem</option>
+            <option value="unseen">Chưa xem</option>
+            <option value="large">Video lớn</option>
+          </select>
+          <select id="playlistFilter">
+            <option value="all">Mọi playlist</option>
+          </select>
         </div>
+
+        <div class="filterRow">
+          <button id="allBtn" class="small active" type="button">Tất cả</button>
+          <button id="favBtn" class="small" type="button">Yêu thích</button>
+          <button id="newPlaylistBtn" class="small" type="button">+ Playlist</button>
+          <button id="exportBtn" class="small" type="button">Export metadata</button>
+          <label class="small importMeta">Import metadata<input id="metadataInput" hidden type="file" accept="application/json,.json" /></label>
+        </div>
+
+        <div class="hint">IndexedDB không phải backup vĩnh viễn. Hãy giữ video gốc ở máy, ổ cứng hoặc cloud. Export metadata không chứa file video thật.</div>
         <div id="libraryList" class="libraryList"></div>
-        <button id="clearBtn" class="danger full">Xóa toàn bộ video offline</button>
+        <button id="clearBtn" class="danger full" type="button">Xóa toàn bộ video offline</button>
       </div>
     </aside>
+
+    <section id="importModal" class="modal" hidden>
+      <div class="modalCard">
+        <h2>Đang import video</h2>
+        <p id="importStatus">Chuẩn bị...</p>
+        <div class="meter"><span id="importBar"></span></div>
+        <ul id="importErrors"></ul>
+        <button id="cancelImportBtn" class="danger full" type="button">Hủy import</button>
+      </div>
+    </section>
   </main>
-  <script src="app.js?v=1"></script>
+  <script src="app.js?v=1.3.0"></script>
 </body>
 </html>
