@@ -1,16 +1,46 @@
 # Offline Cinema
 
-Offline Cinema by VinhVideo is a static, local-first PWA for watching personal videos offline in a vertical feed. It uses IndexedDB for browser storage, keeps the app shell available offline, and stays deployable as plain HTML/CSS/JavaScript on Vercel.
+Offline Cinema by VinhVideo is a static, local-first PWA for watching personal videos offline in a vertical feed. V1.7 adds Kids Safe Mode: a soft in-app guardrail so a parent can approve offline videos before a child watches them.
 
 ## What It Does
 - Saves personal videos offline in the browser with IndexedDB.
 - Plays videos in a vertical cinema/feed interface.
 - Keeps low-end phones usable with Low-End Mode and lazy video loading.
 - Provides search, filters, sorting, playlists, notes, tags, favorites, watch status, resume playback, seek, and +/-10 second controls.
+- Adds Parent Mode and Kids Mode.
 - Exports and imports metadata backup JSON without exporting real video files.
 
-## Portfolio Copy
-Offline Cinema là mini app PWA xem video cá nhân offline theo dạng feed dọc. App lưu video trong trình duyệt bằng IndexedDB, tối ưu cho điện thoại cấu hình thấp với Low-End Mode, lazy loading và quản lý bộ nhớ. Phù hợp để xem nhanh video cá nhân khi không có mạng, nhưng không thay thế backup gốc trên máy/ổ cứng/cloud.
+## Kids Safe Mode
+Kids Safe Mode turns Offline Cinema into a parent-curated offline cinema for children:
+- Parent Mode manages import/export, delete actions, playlists, metadata, storage, and Kids Safe settings.
+- Kids Mode only shows videos marked `approvedForKids`.
+- Kids Mode hides import, delete, export/import metadata, storage technical actions, and edit controls.
+- Kids Home shows friendly shelves such as today's show, family videos, music, learning, favorites, and calm videos.
+- After a video ends, Kids Mode stops instead of autoplaying forever and asks whether to continue.
+
+Kids Safe Mode is a soft guardrail inside the app. It is not a replacement for OS/browser parental controls, device supervision, or adult supervision.
+
+## Parent PIN
+Parent PIN is optional and stored locally.
+- It can be enabled, changed, or removed in Parent Mode.
+- If enabled, leaving Kids Mode requires the 4-digit PIN.
+- If disabled, leaving Kids Mode uses a normal confirmation.
+- The PIN is only a light in-app barrier to reduce accidental taps. It is not strong security.
+
+## Daily Show Limit
+Parent Mode can set:
+- Maximum videos per day.
+- Maximum minutes per day.
+- Reset today's local stats.
+- Enable or disable limits.
+
+The counter is local-device only and resets on a new local day.
+
+## Break Reminder
+Parent Mode can enable a break reminder after every N completed videos. Kids Mode shows a 30-second rest screen with friendly text before the "Xem tiếp" button returns.
+
+## Watch Log
+Kids watch history is stored locally in `localStorage` under `offlineCinema.kidsWatchLog`. Parent Mode shows today's watch time, video count, recent watched videos, and can clear the local log.
 
 ## Key Strengths
 - Static PWA: no backend, no account, no framework, no build step.
@@ -25,6 +55,7 @@ Offline Cinema là mini app PWA xem video cá nhân offline theo dạng feed d�
 - iPhone/iPad storage limits are stricter than desktop browsers.
 - Export metadata does not include video blobs.
 - The app does not transcode/compress videos and does not export ZIP video archives.
+- Kids Safe Mode does not block a child from leaving the browser/app at the OS level.
 
 ## Low-End Mode
 Low-End Mode auto-enables on mobile/tablet, low device memory, or low CPU devices. It can be toggled in the drawer and is stored in `localStorage` as `vinhvideo.lowEndMode`.
@@ -46,7 +77,7 @@ Current schema:
 - `videos`: metadata only.
 - `videoBlobs`: `{ id, blob }`.
 
-The v1 to v2 migration uses a cursor over `videos`, moves legacy `blob` fields into `videoBlobs`, removes `blob` from metadata, and keeps existing metadata such as favorite, tags, note, and play position.
+V1.7 does not bump `DB_VERSION`; it adds optional kids metadata fields through normalization and safe metadata updates.
 
 ## Metadata Backup
 Export creates:
@@ -55,7 +86,15 @@ Export creates:
 vinhvideo-metadata-backup-YYYYMMDD-HHmm.json
 ```
 
-The backup includes app/version/export time, warning text, video metadata, and playlists. It does not include real video files. Import safely merges metadata only when the video blob still exists in IndexedDB.
+The backup includes app/version/export time, warning text, video metadata, playlists, kids visibility fields, and kids settings. It does not include real video files. Import safely merges metadata only when the video blob still exists in IndexedDB.
+
+Kids metadata fields include:
+- `approvedForKids`
+- `kidsCategory`
+- `kidsEnergy`
+- `kidsAllowedTime`
+- `kidsQuestion`
+- `kidsNote`
 
 ## Run Local
 Any static server works. Example:
@@ -77,33 +116,32 @@ Deploy the folder as a static site:
 vercel --prod
 ```
 
-`vercel.json` keeps the output directory as the project root.
-
 ## Test Checklist
-- Open app with no videos.
-- Open app with existing videos.
-- Import one small video.
-- Import multiple videos.
-- Import duplicate video.
-- Cancel import midway.
-- Play, pause, mute/unmute, swipe, seek, and use +/-10 seconds.
-- Favorite, search, filter, sort.
-- Edit title, note, and tags.
-- Create, rename, delete, and filter playlists.
-- Export metadata and import metadata.
-- Reload app and confirm video metadata/blob still exist.
-- Toggle Low-End Mode on/off.
-- Check Storage Health and persistent storage warning.
-- Turn network off and confirm the PWA shell still opens.
+- Open app in Parent Mode.
+- Enter Kids Mode.
+- Exit Kids Mode without PIN.
+- Enable PIN, enter Kids Mode, exit with correct PIN, reject wrong PIN.
+- Import a small video in Parent Mode.
+- Mark video approved for kids.
+- Confirm Kids Mode only shows approved videos.
+- Confirm Kids Mode hides import/delete/export/edit controls.
+- Play a video in Kids Mode and confirm it does not autoplay forever after ending.
+- Confirm daily limit and break reminder.
+- Confirm watch log appears in Parent Mode.
+- Export metadata and confirm kids fields are present.
+- Reload app and confirm mode/settings persist.
+- Toggle Low-End Mode.
+- Confirm old videos still play.
 
 ## Screenshots
-- Home
+- Parent Mode
+- Kids Home
 - Player
 - Library
 - Storage Health
 
-## Roadmap After V1.6
+## Roadmap After V1.7
+- Better touch-friendly Kids category editing.
 - Optional manual cover image per video without auto thumbnail generation.
-- Optional grouped collections beyond simple playlists.
-- More robust manual QA scripts for IndexedDB migration.
+- More robust manual QA scripts for IndexedDB migration and kids settings.
 - Better accessibility labels and keyboard controls.

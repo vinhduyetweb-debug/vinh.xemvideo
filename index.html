@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#090b10" />
   <title>Offline Cinema</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css?v=1.6.0" />
+  <link rel="stylesheet" href="style.css?v=1.7.0" />
 </head>
 <body>
   <main id="appRoot" class="app">
@@ -16,6 +16,7 @@
         <strong>Offline Cinema</strong>
         <span>by VinhVideo</span>
       </div>
+      <button id="kidsParentBtn" class="pill kidsOnly" type="button" hidden>Chế độ của Ba</button>
       <button id="muteBtn" class="pill" type="button">🔇</button>
     </header>
 
@@ -30,7 +31,7 @@
 
     <section id="homeHero" class="homeHero" hidden>
       <div>
-        <p class="eyebrow">VinhVideo Offline Cinema · v1.6.0</p>
+        <p class="eyebrow">VinhVideo Offline Cinema · v1.7.0</p>
         <h1>Offline Cinema</h1>
         <p>Kho video cá nhân offline, tối ưu cho điện thoại yếu.</p>
       </div>
@@ -48,6 +49,32 @@
     </section>
 
     <section id="feed" class="feed" aria-label="Video feed"></section>
+
+    <section id="kidsHome" class="kidsHome" hidden>
+      <p class="eyebrow">Video do Ba/Mẹ chọn sẵn</p>
+      <h1>Rạp chiếu của con</h1>
+      <p>Hôm nay mình xem gì?</p>
+      <div id="kidsQuota" class="kidsQuota">Đang tải suất chiếu...</div>
+      <div id="kidsShelves" class="kidsShelves"></div>
+      <div class="kidsActions">
+        <button id="kidsStartBtn" class="primary bigBtn" type="button">Bắt đầu xem</button>
+        <button id="kidsContinueBtn" class="ghostBtn bigBtn" type="button">Xem tiếp</button>
+        <button id="kidsRestBtn" class="ghostBtn bigBtn" type="button">Nghỉ một chút</button>
+      </div>
+    </section>
+
+    <section id="kidsGate" class="kidsGate" hidden>
+      <div class="kidsGateCard">
+        <h2 id="kidsGateTitle">Con vừa xem xong rồi.</h2>
+        <p id="kidsGateQuestion"></p>
+        <p id="kidsGateNote"></p>
+        <div id="breakCountdown" class="breakCountdown" hidden></div>
+        <div class="kidsActions">
+          <button id="kidsNextBtn" class="primary bigBtn" type="button">Xem tiếp</button>
+          <button id="kidsStopBtn" class="ghostBtn bigBtn" type="button">Nghỉ một chút</button>
+        </div>
+      </div>
+    </section>
 
     <aside id="drawer" class="drawer">
       <div class="panel">
@@ -90,9 +117,47 @@
           <div class="playlistTools">
             <button id="newPlaylistBtn" class="small" type="button">+ Playlist</button>
             <button id="renamePlaylistBtn" class="small" type="button">Đổi tên playlist</button>
+            <button id="toggleKidsPlaylistBtn" class="small" type="button">Hiện trong Kids</button>
             <button id="deletePlaylistBtn" class="small dangerSoft" type="button">Xóa playlist</button>
           </div>
           <div id="libraryList" class="libraryList"></div>
+        </section>
+
+        <section class="drawerGroup parentOnly">
+          <h3>Kids Safe</h3>
+          <button id="enterKidsBtn" class="primary full" type="button">Chế độ của Con</button>
+          <div class="kidsSettings">
+            <label class="toggleRow">
+              <span><strong>Bật PIN phụ huynh</strong><small>PIN chỉ là lớp chặn nhẹ trong app, không phải bảo mật tuyệt đối.</small></span>
+              <input id="pinEnabledToggle" type="checkbox" />
+            </label>
+            <div class="settingsGrid">
+              <button id="setPinBtn" class="small" type="button">Đặt/đổi PIN 4 số</button>
+              <button id="clearPinBtn" class="small dangerSoft" type="button">Xóa PIN</button>
+            </div>
+            <div class="settingsGrid">
+              <label>Số video/ngày<input id="dailyCountInput" type="number" min="1" max="99" /></label>
+              <label>Số phút/ngày<input id="dailyMinutesInput" type="number" min="1" max="600" /></label>
+            </div>
+            <label class="toggleRow">
+              <span><strong>Bật giới hạn suất chiếu</strong><small>Tính theo ngày local trên thiết bị.</small></span>
+              <input id="dailyLimitToggle" type="checkbox" />
+            </label>
+            <label class="toggleRow">
+              <span><strong>Nhắc nghỉ mắt</strong><small>Mặc định sau mỗi 2 video.</small></span>
+              <input id="breakToggle" type="checkbox" />
+            </label>
+            <div class="settingsGrid">
+              <label>Nghỉ sau N video<input id="breakEveryInput" type="number" min="1" max="20" /></label>
+              <button id="resetKidsStatsBtn" class="small" type="button">Reset hôm nay</button>
+            </div>
+            <div class="watchLogBox">
+              <h4>Lịch sử xem của con</h4>
+              <p id="kidsLogSummary">Chưa có dữ liệu.</p>
+              <div id="kidsLogList"></div>
+              <button id="clearKidsLogBtn" class="small dangerSoft" type="button">Xóa lịch sử local</button>
+            </div>
+          </div>
         </section>
 
         <section class="drawerGroup">
@@ -134,7 +199,7 @@
 
         <section class="drawerGroup aboutBox">
           <h3>Ứng dụng</h3>
-          <p><strong>Offline Cinema</strong> by VinhVideo · v1.6.0</p>
+          <p><strong>Offline Cinema</strong> by VinhVideo · v1.7.0</p>
           <p>Local-first · No backend · PWA offline shell</p>
           <p>Video nằm trong IndexedDB của trình duyệt và không phải backup vĩnh viễn.</p>
         </section>
@@ -154,6 +219,7 @@
         <div class="sheetActions">
           <button id="detailPlayBtn" class="primary" type="button">Phát video này</button>
           <button id="detailEditBtn" class="ghostBtn" type="button">Sửa metadata</button>
+          <button id="detailKidsBtn" class="ghostBtn parentOnly" type="button">Kids Safe</button>
           <button id="detailPlaylistBtn" class="ghostBtn" type="button">Playlist</button>
           <button id="detailDeleteBtn" class="danger" type="button">Xóa</button>
         </div>
@@ -170,6 +236,6 @@
       </div>
     </section>
   </main>
-  <script src="app.js?v=1.6.0"></script>
+  <script src="app.js?v=1.7.0"></script>
 </body>
 </html>

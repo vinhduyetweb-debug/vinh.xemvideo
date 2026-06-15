@@ -1,10 +1,21 @@
-const APP_VERSION = "1.6.0";
+const APP_VERSION = "1.7.0";
 const DB_NAME = "vinhvideo_offline_db_v1";
 const DB_VERSION = 2;
 const STORE = "videos";
 const BLOB_STORE = "videoBlobs";
 const PLAYLIST_KEY = "vinhvideo.playlists.v1";
 const LOW_END_KEY = "vinhvideo.lowEndMode";
+const MODE_KEY = "offlineCinema.mode";
+const PIN_ENABLED_KEY = "offlineCinema.parentPinEnabled";
+const PIN_HASH_KEY = "offlineCinema.parentPinHash";
+const DAILY_LIMIT_ENABLED_KEY = "offlineCinema.kidsDailyLimitEnabled";
+const DAILY_LIMIT_COUNT_KEY = "offlineCinema.kidsDailyLimitCount";
+const DAILY_LIMIT_MINUTES_KEY = "offlineCinema.kidsDailyLimitMinutes";
+const KIDS_WATCHED_TODAY_KEY = "offlineCinema.kidsWatchedToday";
+const KIDS_LAST_WATCH_DATE_KEY = "offlineCinema.kidsLastWatchDate";
+const BREAK_ENABLED_KEY = "offlineCinema.kidsBreakEnabled";
+const BREAK_EVERY_KEY = "offlineCinema.kidsBreakEvery";
+const KIDS_WATCH_LOG_KEY = "offlineCinema.kidsWatchLog";
 const LARGE_FILE_BYTES = 200 * 1024 * 1024;
 const LOW_END_FILE_BYTES = 150 * 1024 * 1024;
 const LARGE_IMPORT_BYTES = 1024 * 1024 * 1024;
@@ -48,20 +59,51 @@ const detailTitle = $("detailTitle");
 const detailBody = $("detailBody");
 const detailPlayBtn = $("detailPlayBtn");
 const detailEditBtn = $("detailEditBtn");
+const detailKidsBtn = $("detailKidsBtn");
 const detailPlaylistBtn = $("detailPlaylistBtn");
 const detailDeleteBtn = $("detailDeleteBtn");
+const kidsParentBtn = $("kidsParentBtn");
+const kidsHome = $("kidsHome");
+const kidsQuota = $("kidsQuota");
+const kidsShelves = $("kidsShelves");
+const kidsStartBtn = $("kidsStartBtn");
+const kidsContinueBtn = $("kidsContinueBtn");
+const kidsRestBtn = $("kidsRestBtn");
+const kidsGate = $("kidsGate");
+const kidsGateTitle = $("kidsGateTitle");
+const kidsGateQuestion = $("kidsGateQuestion");
+const kidsGateNote = $("kidsGateNote");
+const breakCountdown = $("breakCountdown");
+const kidsNextBtn = $("kidsNextBtn");
+const kidsStopBtn = $("kidsStopBtn");
+const enterKidsBtn = $("enterKidsBtn");
+const pinEnabledToggle = $("pinEnabledToggle");
+const setPinBtn = $("setPinBtn");
+const clearPinBtn = $("clearPinBtn");
+const dailyCountInput = $("dailyCountInput");
+const dailyMinutesInput = $("dailyMinutesInput");
+const dailyLimitToggle = $("dailyLimitToggle");
+const breakToggle = $("breakToggle");
+const breakEveryInput = $("breakEveryInput");
+const resetKidsStatsBtn = $("resetKidsStatsBtn");
+const kidsLogSummary = $("kidsLogSummary");
+const kidsLogList = $("kidsLogList");
+const clearKidsLogBtn = $("clearKidsLogBtn");
 
 let db = null;
 let videos = [];
 let visibleVideos = [];
 let playlists = loadPlaylists();
 let selectedDetailId = null;
+let appMode = localStorage.getItem(MODE_KEY) === "kids" ? "kids" : "parent";
 let muted = true;
 let observer = null;
 let currentIndex = 0;
 let lowEndMode = getInitialLowEndMode();
 let cancelImport = false;
 let skipAllDuplicates = false;
+let pendingKidsNextIndex = null;
+let breakTimer = null;
 const objectUrls = new Map();
 const videoElements = new Map();
 const positionTimers = new Map();
@@ -82,6 +124,169 @@ function applyLowEndMode() {
   lowEndToggle.checked = lowEndMode;
   localStorage.setItem(LOW_END_KEY, lowEndMode ? "1" : "0");
   maintainMountedVideos();
+}
+
+function applyAppMode() {
+  appRoot.classList.toggle("kids-mode", appMode === "kids");
+  document.body.classList.toggle("kids-mode", appMode === "kids");
+  kidsParentBtn.hidden = appMode !== "kids";
+  drawer.classList.remove("open");
+  localStorage.setItem(MODE_KEY, appMode);
+  syncKidsSettingsUI();
+  if (db) refresh({ keepIndex: true });
+}
+
+function isKidsMode() {
+  return appMode === "kids";
+}
+
+function pinEnabled() {
+  return localStorage.getItem(PIN_ENABLED_KEY) === "1" && Boolean(localStorage.getItem(PIN_HASH_KEY));
+}
+
+async function hashPin(pin) {
+  const value = String(pin || "");
+  if (crypto?.subtle) {
+    const bytes = new TextEncoder().encode("offline-cinema-pin:" + value);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    return [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+  }
+  return btoa("offline-cinema-pin:" + value);
+}
+
+function validPin(pin) {
+  return /^\d{4}$/.test(String(pin || ""));
+}
+
+async function setParentPin() {
+  const pin = prompt("Đặt PIN 4 số cho Chế độ của Ba:");
+  if (!validPin(pin)) {
+    toast("PIN cần đúng 4 số.");
+    return;
+  }
+  const confirmPin = prompt("Nhập lại PIN:");
+  if (pin !== confirmPin) {
+    toast("PIN nhập lại không khớp.");
+    return;
+  }
+  localStorage.setItem(PIN_HASH_KEY, await hashPin(pin));
+  localStorage.setItem(PIN_ENABLED_KEY, "1");
+  syncKidsSettingsUI();
+  toast("Đã bật PIN phụ huynh.");
+}
+
+async function verifyParentPin() {
+  if (!pinEnabled()) return confirm("Thoát Chế độ của Con để về Chế độ của Ba?");
+  const pin = prompt("Nhập PIN 4 số để về Chế độ của Ba:");
+  if (!validPin(pin)) return false;
+  const ok = await hashPin(pin) === localStorage.getItem(PIN_HASH_KEY);
+  if (!ok) toast("PIN không đúng.");
+  return ok;
+}
+
+function clearParentPin() {
+  if (!confirm("Xóa PIN phụ huynh?")) return;
+  localStorage.removeItem(PIN_HASH_KEY);
+  localStorage.setItem(PIN_ENABLED_KEY, "0");
+  syncKidsSettingsUI();
+  toast("Đã xóa PIN.");
+}
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function defaultWatchedToday() {
+  return { date: todayKey(), count: 0, seconds: 0, completedSinceBreak: 0 };
+}
+
+function getWatchedToday() {
+  const today = todayKey();
+  const lastDate = localStorage.getItem(KIDS_LAST_WATCH_DATE_KEY);
+  if (lastDate !== today) {
+    const fresh = defaultWatchedToday();
+    saveWatchedToday(fresh);
+    return fresh;
+  }
+  try {
+    return { ...defaultWatchedToday(), ...JSON.parse(localStorage.getItem(KIDS_WATCHED_TODAY_KEY) || "{}"), date: today };
+  } catch {
+    return defaultWatchedToday();
+  }
+}
+
+function saveWatchedToday(value) {
+  localStorage.setItem(KIDS_LAST_WATCH_DATE_KEY, value.date || todayKey());
+  localStorage.setItem(KIDS_WATCHED_TODAY_KEY, JSON.stringify(value));
+}
+
+function dailyLimitEnabled() {
+  return localStorage.getItem(DAILY_LIMIT_ENABLED_KEY) !== "0";
+}
+
+function dailyLimitCount() {
+  return Math.max(1, Number(localStorage.getItem(DAILY_LIMIT_COUNT_KEY) || 5));
+}
+
+function dailyLimitMinutes() {
+  return Math.max(1, Number(localStorage.getItem(DAILY_LIMIT_MINUTES_KEY) || 20));
+}
+
+function breakReminderEnabled() {
+  return localStorage.getItem(BREAK_ENABLED_KEY) !== "0";
+}
+
+function breakEveryCount() {
+  return Math.max(1, Number(localStorage.getItem(BREAK_EVERY_KEY) || 2));
+}
+
+function remainingKidsQuota() {
+  const watched = getWatchedToday();
+  return {
+    videos: Math.max(0, dailyLimitCount() - watched.count),
+    minutes: Math.max(0, dailyLimitMinutes() - Math.ceil(watched.seconds / 60)),
+    exhausted: dailyLimitEnabled() && (watched.count >= dailyLimitCount() || watched.seconds >= dailyLimitMinutes() * 60)
+  };
+}
+
+function loadKidsLog() {
+  try {
+    const rows = JSON.parse(localStorage.getItem(KIDS_WATCH_LOG_KEY) || "[]");
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveKidsLog(rows) {
+  localStorage.setItem(KIDS_WATCH_LOG_KEY, JSON.stringify(rows.slice(0, 100)));
+}
+
+function syncKidsSettingsUI() {
+  if (!pinEnabledToggle) return;
+  pinEnabledToggle.checked = pinEnabled();
+  dailyLimitToggle.checked = dailyLimitEnabled();
+  dailyCountInput.value = String(dailyLimitCount());
+  dailyMinutesInput.value = String(dailyLimitMinutes());
+  breakToggle.checked = breakReminderEnabled();
+  breakEveryInput.value = String(breakEveryCount());
+}
+
+function saveKidsSettingsFromUI() {
+  localStorage.setItem(DAILY_LIMIT_ENABLED_KEY, dailyLimitToggle.checked ? "1" : "0");
+  localStorage.setItem(DAILY_LIMIT_COUNT_KEY, String(Math.max(1, Number(dailyCountInput.value || 5))));
+  localStorage.setItem(DAILY_LIMIT_MINUTES_KEY, String(Math.max(1, Number(dailyMinutesInput.value || 20))));
+  localStorage.setItem(BREAK_ENABLED_KEY, breakToggle.checked ? "1" : "0");
+  localStorage.setItem(BREAK_EVERY_KEY, String(Math.max(1, Number(breakEveryInput.value || 2))));
+  renderKidsHome();
+}
+
+function resetKidsStatsToday() {
+  saveWatchedToday(defaultWatchedToday());
+  renderKidsHome();
+  renderKidsLog();
+  toast("Đã reset thống kê hôm nay.");
 }
 
 function openDB() {
@@ -229,7 +434,13 @@ function normalizeMetadata(record) {
     createdAt: record.createdAt || now,
     updatedAt: record.updatedAt || record.createdAt || now,
     order: record.order || record.createdAt || now,
-    fingerprint: record.fingerprint || [fileName, record.size || 0, record.lastModified || ""].join("|")
+    fingerprint: record.fingerprint || [fileName, record.size || 0, record.lastModified || ""].join("|"),
+    approvedForKids: Boolean(record.approvedForKids),
+    kidsCategory: record.kidsCategory || "",
+    kidsEnergy: ["calm", "normal", "active"].includes(record.kidsEnergy) ? record.kidsEnergy : "normal",
+    kidsAllowedTime: ["anytime", "daytime", "notBeforeSleep"].includes(record.kidsAllowedTime) ? record.kidsAllowedTime : "anytime",
+    kidsQuestion: record.kidsQuestion || "",
+    kidsNote: record.kidsNote || ""
   };
 }
 
@@ -324,6 +535,8 @@ async function refresh({ keepIndex = false } = {}) {
   if (currentIndex < 0) currentIndex = 0;
   if (currentIndex >= visibleVideos.length) currentIndex = Math.max(0, visibleVideos.length - 1);
   renderHomeHero();
+  renderKidsHome();
+  renderKidsLog();
   renderFeed();
   renderLibrary();
   updatePlaylistFilter();
@@ -332,7 +545,7 @@ async function refresh({ keepIndex = false } = {}) {
 
 function renderHomeHero() {
   const hasVideos = videos.length > 0;
-  homeHero.hidden = !hasVideos;
+  homeHero.hidden = !hasVideos || isKidsMode();
   if (!hasVideos) return;
   const totalSize = videos.reduce((sum, video) => sum + video.size, 0);
   const favoriteCount = videos.filter(video => video.favorite).length;
@@ -343,11 +556,43 @@ function renderHomeHero() {
   heroRecent.textContent = recent?.lastPlayedAt ? recent.title : "Chưa có";
 }
 
+function renderKidsHome() {
+  kidsHome.hidden = !isKidsMode();
+  if (!isKidsMode()) return;
+  const quota = remainingKidsQuota();
+  kidsQuota.textContent = quota.exhausted
+    ? "Rạp chiếu hôm nay đóng cửa rồi. Mình nghỉ mắt nha con."
+    : `Hôm nay con còn ${quota.videos} video hoặc khoảng ${quota.minutes} phút xem.`;
+  const groups = [
+    ["Suất chiếu hôm nay", visibleVideos],
+    ["Video gia đình", visibleVideos.filter(video => video.kidsCategory === "family")],
+    ["Nhạc vui", visibleVideos.filter(video => video.kidsCategory === "music")],
+    ["Học nhẹ", visibleVideos.filter(video => video.kidsCategory === "learning")],
+    ["Yêu thích của con", visibleVideos.filter(video => video.favorite)],
+    ["Êm dịu", visibleVideos.filter(video => video.kidsEnergy === "calm")]
+  ];
+  const allowedPlaylists = playlists.filter(playlist => playlist.showInKids);
+  for (const playlist of allowedPlaylists) {
+    groups.push([playlist.name, visibleVideos.filter(video => playlist.videoIds.includes(video.id))]);
+  }
+  kidsShelves.innerHTML = groups
+    .filter(([, rows]) => rows.length)
+    .map(([name, rows]) => `<button class="kidsShelf" type="button" data-first="${esc(rows[0].id)}"><strong>${esc(name)}</strong><span>${rows.length} video</span></button>`)
+    .join("") || "<div class='hint'>Chưa có video nào được duyệt cho con.</div>";
+  for (const button of kidsShelves.querySelectorAll(".kidsShelf")) {
+    button.onclick = () => {
+      const index = visibleVideos.findIndex(video => video.id === button.dataset.first);
+      if (index >= 0) startKidsPlayback(index);
+    };
+  }
+}
+
 function applyFilters() {
   const query = searchInput.value.trim().toLowerCase();
   const status = statusFilter.value;
   const selectedPlaylist = playlistFilter.value;
   let rows = [...videos];
+  if (isKidsMode()) rows = rows.filter(video => video.approvedForKids && isAllowedNow(video));
 
   if (query) {
     rows = rows.filter(video => {
@@ -375,6 +620,13 @@ function applyFilters() {
   visibleVideos = rows;
 }
 
+function isAllowedNow(video) {
+  const hour = new Date().getHours();
+  if (video.kidsAllowedTime === "daytime") return hour >= 6 && hour < 19;
+  if (video.kidsAllowedTime === "notBeforeSleep") return hour < 20;
+  return true;
+}
+
 function renderFeed() {
   empty.style.display = videos.length ? "none" : "grid";
   feed.innerHTML = "";
@@ -387,7 +639,7 @@ function renderFeed() {
     page.dataset.id = video.id;
     page.dataset.index = String(index);
     page.innerHTML = `
-      <video playsinline loop preload="none"></video>
+      <video playsinline ${isKidsMode() ? "" : "loop"} preload="none"></video>
       <div class="overlay">
         <h2>${esc(video.title)}</h2>
         <p>${esc(video.source)} • ${fmt(video.size)} • <span class="statusText">${watchStatus(video)}</span></p>
@@ -399,8 +651,8 @@ function renderFeed() {
       </div>
       <div class="actions">
         <button class="actionBtn fav ${video.favorite ? "active" : ""}" type="button" aria-label="Yêu thích">♥</button>
-        <button class="actionBtn edit" type="button" aria-label="Sửa">✎</button>
-        <button class="actionBtn del" type="button" aria-label="Xóa">🗑</button>
+        <button class="actionBtn edit parentOnly" type="button" aria-label="Sửa">✎</button>
+        <button class="actionBtn del parentOnly" type="button" aria-label="Xóa">🗑</button>
       </div>
       <button class="progress" type="button" aria-label="Seek video"><span></span></button>`;
 
@@ -448,6 +700,7 @@ function bindVideoEvents(page, video, videoEl) {
   });
 
   videoEl.addEventListener("pause", () => savePlayback(video, videoEl, statusText));
+  videoEl.addEventListener("ended", () => handleVideoEnded(video, videoEl));
   page.addEventListener("dblclick", event => {
     if (event.target.closest("button")) return;
     togglePlay(videoEl);
@@ -486,7 +739,17 @@ function watchStatus(video) {
 }
 
 async function setCurrentIndex(index) {
-  if (!Number.isFinite(index) || index < 0 || index >= visibleVideos.length || index === currentIndex) return;
+  if (!Number.isFinite(index) || index < 0 || index >= visibleVideos.length) return;
+  if (index === currentIndex) {
+    maintainMountedVideos();
+    const same = visibleVideos[currentIndex];
+    const sameEl = same ? videoElements.get(same.id) : null;
+    if (sameEl && (!isKidsMode() || !remainingKidsQuota().exhausted)) {
+      sameEl.muted = muted;
+      sameEl.play().catch(() => {});
+    }
+    return;
+  }
   const previous = visibleVideos[currentIndex];
   if (previous) {
     const previousEl = videoElements.get(previous.id);
@@ -501,7 +764,7 @@ async function setCurrentIndex(index) {
   const currentEl = current ? videoElements.get(current.id) : null;
   if (currentEl) {
     currentEl.muted = muted;
-    currentEl.play().catch(() => {});
+    if (!isKidsMode() || !remainingKidsQuota().exhausted) currentEl.play().catch(() => {});
   }
 }
 
@@ -586,6 +849,110 @@ async function savePlayback(video, videoEl, statusText) {
   await updateVideo(video).catch(() => {});
 }
 
+async function handleVideoEnded(video, videoEl) {
+  await savePlayback(video, videoEl);
+  if (!isKidsMode()) return;
+  recordKidsWatch(video, videoEl, true);
+  videoEl.pause();
+  const quota = remainingKidsQuota();
+  if (quota.exhausted) {
+    showKidsEndScreen();
+    return;
+  }
+  const watched = getWatchedToday();
+  if (breakReminderEnabled() && watched.completedSinceBreak > 0 && watched.completedSinceBreak % breakEveryCount() === 0) {
+    showBreakScreen();
+    return;
+  }
+  showKidsAfterVideo(video);
+}
+
+function recordKidsWatch(video, videoEl, completed) {
+  const watchedSeconds = Math.max(1, Math.round(videoEl.currentTime || video.playPosition || video.duration || 0));
+  const today = getWatchedToday();
+  today.count += completed ? 1 : 0;
+  today.seconds += watchedSeconds;
+  today.completedSinceBreak += completed ? 1 : 0;
+  saveWatchedToday(today);
+  const log = loadKidsLog();
+  log.unshift({
+    id: crypto.randomUUID(),
+    videoId: video.id,
+    title: video.title,
+    watchedAt: new Date().toISOString(),
+    durationWatched: watchedSeconds,
+    completed: Boolean(completed),
+    mode: "kids"
+  });
+  saveKidsLog(log);
+  renderKidsHome();
+  renderKidsLog();
+}
+
+function showKidsAfterVideo(video) {
+  pendingKidsNextIndex = Math.min(currentIndex + 1, visibleVideos.length - 1);
+  kidsGateTitle.textContent = "Con vừa xem xong rồi.";
+  kidsGateQuestion.textContent = video.kidsQuestion ? `Ba hỏi con: ${video.kidsQuestion}` : "";
+  kidsGateNote.textContent = video.kidsNote || "Mình chọn xem tiếp hoặc nghỉ một chút nha.";
+  breakCountdown.hidden = true;
+  kidsNextBtn.hidden = false;
+  kidsGate.hidden = false;
+}
+
+function showKidsEndScreen() {
+  pendingKidsNextIndex = null;
+  kidsGateTitle.textContent = "Rạp chiếu hôm nay đóng cửa rồi.";
+  kidsGateQuestion.textContent = "";
+  kidsGateNote.textContent = "Mình nghỉ mắt nha con.";
+  breakCountdown.hidden = true;
+  kidsNextBtn.hidden = true;
+  kidsGate.hidden = false;
+}
+
+function showBreakScreen() {
+  pendingKidsNextIndex = Math.min(currentIndex + 1, visibleVideos.length - 1);
+  kidsGateTitle.textContent = "Mình nghỉ mắt 30 giây nha.";
+  kidsGateQuestion.textContent = "Nhìn ra xa một chút. Uống nước một ngụm.";
+  kidsGateNote.textContent = "";
+  kidsNextBtn.hidden = true;
+  kidsGate.hidden = false;
+  breakCountdown.hidden = false;
+  let remaining = 30;
+  breakCountdown.textContent = `${remaining}s`;
+  clearInterval(breakTimer);
+  breakTimer = setInterval(() => {
+    remaining -= 1;
+    breakCountdown.textContent = `${remaining}s`;
+    if (remaining <= 0) {
+      clearInterval(breakTimer);
+      const watched = getWatchedToday();
+      watched.completedSinceBreak = 0;
+      saveWatchedToday(watched);
+      breakCountdown.textContent = "Có thể xem tiếp rồi.";
+      kidsNextBtn.hidden = false;
+    }
+  }, 1000);
+}
+
+function hideKidsGate() {
+  clearInterval(breakTimer);
+  kidsGate.hidden = true;
+}
+
+function startKidsPlayback(index = 0) {
+  if (!visibleVideos.length) {
+    toast("Chưa có video được duyệt cho con.");
+    return;
+  }
+  if (remainingKidsQuota().exhausted) {
+    showKidsEndScreen();
+    return;
+  }
+  kidsHome.hidden = true;
+  hideKidsGate();
+  scrollToIndex(Math.max(0, Math.min(index, visibleVideos.length - 1)));
+}
+
 function renderLibrary() {
   libraryList.innerHTML = visibleVideos.length ? "" : "<div class='hint'>Không có video phù hợp bộ lọc.</div>";
   visibleVideos.forEach((video, index) => {
@@ -619,6 +986,20 @@ function renderLibrary() {
     item.querySelector(".del").onclick = () => removeVideo(video.id);
     libraryList.appendChild(item);
   });
+}
+
+function renderKidsLog() {
+  if (!kidsLogSummary || !kidsLogList) return;
+  const log = loadKidsLog();
+  const today = todayKey();
+  const todayRows = log.filter(row => String(row.watchedAt || "").startsWith(today));
+  const seconds = todayRows.reduce((sum, row) => sum + Number(row.durationWatched || 0), 0);
+  kidsLogSummary.textContent = `Hôm nay đã xem ${todayRows.length} video, khoảng ${Math.ceil(seconds / 60)} phút.`;
+  kidsLogList.innerHTML = log.slice(0, 8).map(row => `
+    <div class="logItem">
+      <strong>${esc(row.title)}</strong>
+      <span>${new Date(row.watchedAt).toLocaleString("vi-VN")} • ${Math.ceil((row.durationWatched || 0) / 60)} phút</span>
+    </div>`).join("") || "<div class='hint'>Chưa có lịch sử xem.</div>";
 }
 
 function scrollToIndex(index) {
@@ -671,11 +1052,51 @@ function showVideoDetail(id) {
     ["Tags", video.tags.length ? video.tags.join(", ") : "Chưa có"],
     ["Note", video.note || "Chưa có"],
     ["Playlist", playlistNames],
+    ["Kids Safe", video.approvedForKids ? "Cho con xem" : "Chưa duyệt"],
+    ["Kids category", video.kidsCategory || "Chưa đặt"],
+    ["Kids energy", kidsEnergyLabel(video.kidsEnergy)],
+    ["Kids time", kidsTimeLabel(video.kidsAllowedTime)],
+    ["Kids question", video.kidsQuestion || "Chưa có"],
+    ["Kids note", video.kidsNote || "Chưa có"],
     ["Play position", fmtTime(video.playPosition)],
     ["Created", new Date(video.createdAt).toLocaleString("vi-VN")],
     ["Updated", new Date(video.updatedAt).toLocaleString("vi-VN")]
   ].map(([label, value]) => `<div class="detailRow"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
   detailSheet.hidden = false;
+}
+
+function kidsEnergyLabel(value) {
+  return value === "calm" ? "Êm" : value === "active" ? "Sôi động" : "Vừa";
+}
+
+function kidsTimeLabel(value) {
+  if (value === "daytime") return "Ban ngày";
+  if (value === "notBeforeSleep") return "Không xem trước giờ ngủ";
+  return "Lúc nào cũng được";
+}
+
+async function editKidsSafe(id) {
+  const video = videos.find(item => item.id === id);
+  if (!video) return;
+  video.approvedForKids = confirm(video.approvedForKids ? "Video đang cho con xem. Bấm OK để giữ duyệt, Cancel để bỏ duyệt." : "Cho con xem video này?");
+  const category = prompt("Kids category (family, music, learning hoặc để trống):", video.kidsCategory || "");
+  if (category === null) return;
+  const energy = prompt("Năng lượng: calm, normal, active", video.kidsEnergy || "normal");
+  if (energy === null) return;
+  const allowedTime = prompt("Thời điểm: anytime, daytime, notBeforeSleep", video.kidsAllowedTime || "anytime");
+  if (allowedTime === null) return;
+  const question = prompt("Câu hỏi sau video cho con:", video.kidsQuestion || "");
+  if (question === null) return;
+  const note = prompt("Ghi chú ngắn cho Ba/Mẹ:", video.kidsNote || "");
+  if (note === null) return;
+  video.kidsCategory = category.trim();
+  video.kidsEnergy = ["calm", "normal", "active"].includes(energy.trim()) ? energy.trim() : "normal";
+  video.kidsAllowedTime = ["anytime", "daytime", "notBeforeSleep"].includes(allowedTime.trim()) ? allowedTime.trim() : "anytime";
+  video.kidsQuestion = question.trim();
+  video.kidsNote = note.trim();
+  await updateVideo(video);
+  showVideoDetail(id);
+  await refresh({ keepIndex: true });
 }
 
 function closeVideoDetail() {
@@ -874,7 +1295,7 @@ async function requestPersistentStorage() {
 function loadPlaylists() {
   try {
     const rows = JSON.parse(localStorage.getItem(PLAYLIST_KEY) || "[]");
-    return Array.isArray(rows) ? rows.map(item => ({ id: item.id || crypto.randomUUID(), name: item.name || "Playlist", videoIds: Array.isArray(item.videoIds) ? item.videoIds : [] })) : [];
+    return Array.isArray(rows) ? rows.map(item => ({ id: item.id || crypto.randomUUID(), name: item.name || "Playlist", videoIds: Array.isArray(item.videoIds) ? item.videoIds : [], showInKids: Boolean(item.showInKids) })) : [];
   } catch {
     return [];
   }
@@ -900,7 +1321,7 @@ function updatePlaylistFilter() {
 function createPlaylist() {
   const name = prompt("Tên playlist mới:");
   if (!name?.trim()) return null;
-  const playlist = { id: crypto.randomUUID(), name: name.trim(), videoIds: [] };
+  const playlist = { id: crypto.randomUUID(), name: name.trim(), videoIds: [], showInKids: false };
   playlists.push(playlist);
   savePlaylists();
   return playlist;
@@ -937,6 +1358,18 @@ function deleteSelectedPlaylist() {
   toast("Đã xóa playlist.");
 }
 
+function toggleSelectedPlaylistKids() {
+  const playlist = selectedPlaylist();
+  if (!playlist) {
+    toast("Hãy chọn một playlist trước.");
+    return;
+  }
+  playlist.showInKids = !playlist.showInKids;
+  savePlaylists();
+  renderKidsHome();
+  toast(playlist.showInKids ? "Playlist sẽ hiện trong Kids Mode." : "Playlist đã ẩn khỏi Kids Mode.");
+}
+
 function addVideoToPlaylist(videoId) {
   let playlist = selectedPlaylist() || playlists[0];
   if (playlist?.videoIds.includes(videoId)) {
@@ -967,7 +1400,15 @@ function exportMetadata() {
     exportedAt: new Date().toISOString(),
     warning: "This file does not include video blobs.",
     videos: videos.map(video => normalizeMetadata(video)),
-    playlists
+    playlists,
+    kidsSettings: {
+      dailyLimitEnabled: dailyLimitEnabled(),
+      dailyLimitCount: dailyLimitCount(),
+      dailyLimitMinutes: dailyLimitMinutes(),
+      breakReminderEnabled: breakReminderEnabled(),
+      breakEvery: breakEveryCount(),
+      pinEnabled: pinEnabled()
+    }
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
   const a = document.createElement("a");
@@ -1006,10 +1447,18 @@ async function importMetadataFile(file) {
     const byId = new Map(playlists.map(item => [item.id, item]));
     for (const item of payload.playlists) {
       if (!item?.id) continue;
-      byId.set(item.id, { id: item.id, name: item.name || "Playlist", videoIds: Array.isArray(item.videoIds) ? item.videoIds : [] });
+      byId.set(item.id, { id: item.id, name: item.name || "Playlist", videoIds: Array.isArray(item.videoIds) ? item.videoIds : [], showInKids: Boolean(item.showInKids) });
     }
     playlists = [...byId.values()];
     savePlaylists();
+  }
+  if (payload.kidsSettings && typeof payload.kidsSettings === "object") {
+    localStorage.setItem(DAILY_LIMIT_ENABLED_KEY, payload.kidsSettings.dailyLimitEnabled === false ? "0" : "1");
+    if (payload.kidsSettings.dailyLimitCount) localStorage.setItem(DAILY_LIMIT_COUNT_KEY, String(payload.kidsSettings.dailyLimitCount));
+    if (payload.kidsSettings.dailyLimitMinutes) localStorage.setItem(DAILY_LIMIT_MINUTES_KEY, String(payload.kidsSettings.dailyLimitMinutes));
+    localStorage.setItem(BREAK_ENABLED_KEY, payload.kidsSettings.breakReminderEnabled === false ? "0" : "1");
+    if (payload.kidsSettings.breakEvery) localStorage.setItem(BREAK_EVERY_KEY, String(payload.kidsSettings.breakEvery));
+    syncKidsSettingsUI();
   }
   metadataInput.value = "";
   await refresh();
@@ -1068,6 +1517,7 @@ $("newPlaylistBtn").onclick = () => {
   refresh({ keepIndex: true });
 };
 $("renamePlaylistBtn").onclick = renameSelectedPlaylist;
+$("toggleKidsPlaylistBtn").onclick = toggleSelectedPlaylistKids;
 $("deletePlaylistBtn").onclick = deleteSelectedPlaylist;
 $("exportBtn").onclick = exportMetadata;
 $("clearBtn").onclick = async () => {
@@ -1089,6 +1539,7 @@ detailSheet.addEventListener("click", event => {
 $("detailCloseBtn").onclick = closeVideoDetail;
 detailPlayBtn.onclick = playDetailVideo;
 detailEditBtn.onclick = () => selectedDetailId && editVideo(selectedDetailId);
+detailKidsBtn.onclick = () => selectedDetailId && editKidsSafe(selectedDetailId);
 detailPlaylistBtn.onclick = () => selectedDetailId && addVideoToPlaylist(selectedDetailId);
 detailDeleteBtn.onclick = () => {
   if (!selectedDetailId) return;
@@ -1096,18 +1547,68 @@ detailDeleteBtn.onclick = () => {
     if (deleted) closeVideoDetail();
   });
 };
+enterKidsBtn.onclick = () => {
+  appMode = "kids";
+  applyAppMode();
+};
+kidsParentBtn.onclick = async () => {
+  if (await verifyParentPin()) {
+    appMode = "parent";
+    hideKidsGate();
+    applyAppMode();
+  }
+};
+pinEnabledToggle.onchange = async () => {
+  if (pinEnabledToggle.checked) await setParentPin();
+  else {
+    localStorage.setItem(PIN_ENABLED_KEY, "0");
+    syncKidsSettingsUI();
+  }
+};
+setPinBtn.onclick = setParentPin;
+clearPinBtn.onclick = clearParentPin;
+dailyLimitToggle.onchange = saveKidsSettingsFromUI;
+dailyCountInput.onchange = saveKidsSettingsFromUI;
+dailyMinutesInput.onchange = saveKidsSettingsFromUI;
+breakToggle.onchange = saveKidsSettingsFromUI;
+breakEveryInput.onchange = saveKidsSettingsFromUI;
+resetKidsStatsBtn.onclick = resetKidsStatsToday;
+clearKidsLogBtn.onclick = () => {
+  if (!confirm("Xóa lịch sử xem local của con?")) return;
+  saveKidsLog([]);
+  renderKidsLog();
+};
+kidsStartBtn.onclick = () => startKidsPlayback(0);
+kidsContinueBtn.onclick = () => {
+  const recent = [...visibleVideos].sort((a, b) => (b.lastPlayedAt || 0) - (a.lastPlayedAt || 0))[0];
+  const index = recent ? visibleVideos.findIndex(video => video.id === recent.id) : 0;
+  startKidsPlayback(Math.max(0, index));
+};
+kidsRestBtn.onclick = () => showKidsEndScreen();
+kidsNextBtn.onclick = () => {
+  const next = pendingKidsNextIndex ?? Math.min(currentIndex + 1, visibleVideos.length - 1);
+  hideKidsGate();
+  startKidsPlayback(next);
+};
+kidsStopBtn.onclick = () => {
+  hideKidsGate();
+  kidsHome.hidden = false;
+  document.querySelectorAll("video").forEach(video => video.pause());
+};
 window.addEventListener("online", () => toast("Đã có internet."));
 window.addEventListener("offline", () => toast("Đang ở chế độ offline."));
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.6.0").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.7.0").catch(() => {}));
 }
 
 (async () => {
   try {
     applyLowEndMode();
+    applyAppMode();
     db = await openDB();
     updatePlaylistFilter();
+    syncKidsSettingsUI();
     await refresh();
   } catch (error) {
     toast("Không mở được thư viện IndexedDB trên trình duyệt này.", 4200);

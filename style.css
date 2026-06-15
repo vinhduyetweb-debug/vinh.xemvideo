@@ -16,6 +16,8 @@ button,input,select{font:inherit}
 button,label,select{cursor:pointer}
 .app{width:100%;height:100dvh;background:radial-gradient(circle at 18% 0%,#172033,var(--bg) 42%,#020306);overflow:hidden;position:relative}
 .app.lowEnd{background:var(--bg)}
+.kids-mode .parentOnly,.kids-mode .drawerGroup:not(.aboutBox){display:none}
+.kidsOnly[hidden]{display:none}
 .topbar{position:fixed;z-index:30;top:calc(env(safe-area-inset-top) + 10px);left:10px;right:10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .topbar button{pointer-events:auto}
 .brand{display:grid;text-align:center;gap:1px;color:var(--text);text-shadow:0 2px 18px rgba(0,0,0,.7)}
@@ -53,6 +55,23 @@ button,label,select{cursor:pointer}
 .heroStats span{display:block;color:var(--muted);font-size:11px}
 .heroStats strong{display:block;margin-top:3px;font-size:15px;overflow-wrap:anywhere}
 .heroActions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.kidsHome{position:absolute;z-index:12;inset:0;display:grid;align-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 24%,#24324a,var(--bg) 68%)}
+.kidsHome[hidden]{display:none}
+.kidsHome h1{margin:0;font-size:34px}
+.kidsHome p{margin:0;color:rgba(244,239,230,.76)}
+.kidsQuota{padding:12px;border-radius:16px;background:rgba(216,181,109,.14);border:1px solid rgba(216,181,109,.3);font-weight:800}
+.kidsShelves{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kidsShelf{display:grid;gap:4px;text-align:left;border:1px solid var(--border);border-radius:18px;padding:14px;background:rgba(255,255,255,.08);color:var(--text)}
+.kidsShelf strong{font-size:15px}
+.kidsShelf span{color:var(--muted);font-size:12px}
+.kidsActions{display:grid;gap:10px}
+.bigBtn{font-size:17px;padding:15px 18px;border-radius:20px}
+.kidsGate{position:fixed;z-index:110;inset:0;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.74)}
+.kidsGate[hidden]{display:none}
+.kidsGateCard{width:min(430px,100%);display:grid;gap:14px;text-align:center;padding:22px;border-radius:24px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow)}
+.kidsGateCard h2{margin:0;font-size:26px}
+.kidsGateCard p{margin:0;color:var(--muted);line-height:1.45}
+.breakCountdown{font-size:34px;font-weight:900;color:var(--accent)}
 .drawer{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.64);display:none}
 .drawer.open{display:block}
 .panel{position:absolute;left:0;right:0;bottom:0;max-height:92dvh;overflow-y:auto;padding:16px;padding-bottom:calc(env(safe-area-inset-bottom) + 16px);border-radius:26px 26px 0 0;background:rgba(17,23,34,.96);border-top:1px solid var(--border);display:grid;gap:12px;box-shadow:var(--shadow)}
@@ -78,6 +97,15 @@ button,label,select{cursor:pointer}
 .toggleRow strong{display:block;font-size:14px}
 .toggleRow small{display:block;margin-top:3px;color:var(--muted);font-size:12px;line-height:1.35}
 .toggleRow input{width:22px;height:22px;flex:0 0 auto}
+.kidsSettings{display:grid;gap:10px}
+.settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.settingsGrid label{display:grid;gap:5px;color:var(--muted);font-size:12px}
+.settingsGrid input{width:100%;border:1px solid var(--border);border-radius:12px;background:rgba(0,0,0,.18);color:var(--text);padding:10px}
+.watchLogBox{display:grid;gap:8px;padding:10px;border-radius:14px;background:rgba(0,0,0,.16)}
+.watchLogBox h4{margin:0;font-size:14px}
+.watchLogBox p{margin:0;color:var(--muted);font-size:12px}
+.logItem{display:grid;gap:2px;padding:8px;border-radius:10px;background:rgba(255,255,255,.06)}
+.logItem span{color:var(--muted);font-size:11px}
 .libraryTools{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .libraryTools input,.libraryTools select{min-width:0;width:100%;border:1px solid var(--border);border-radius:12px;background:rgba(0,0,0,.18);color:var(--text);padding:10px}
 .libraryTools input{grid-column:1/-1;cursor:text}
@@ -115,7 +143,7 @@ button,label,select{cursor:pointer}
 .meter span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-cool))}
 #importErrors{max-height:150px;overflow:auto;margin:0;padding-left:18px;color:#ffd6d3;font-size:12px}
 @media(max-width:420px){
-  .actionsRow,.healthGrid,.libraryTools,.heroActions,.sheetActions{grid-template-columns:1fr}
+  .actionsRow,.healthGrid,.libraryTools,.heroActions,.sheetActions,.settingsGrid,.kidsShelves{grid-template-columns:1fr}
   .heroStats{grid-template-columns:1fr 1fr}
   .item{grid-template-columns:44px 1fr}
   .thumb{width:44px;height:44px}
