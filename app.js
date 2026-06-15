@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.6.0";
 const DB_NAME = "vinhvideo_offline_db_v1";
 const DB_VERSION = 2;
 const STORE = "videos";
@@ -38,11 +38,24 @@ const importStatus = $("importStatus");
 const importBar = $("importBar");
 const importErrors = $("importErrors");
 const cancelImportBtn = $("cancelImportBtn");
+const homeHero = $("homeHero");
+const heroTotalVideos = $("heroTotalVideos");
+const heroTotalSize = $("heroTotalSize");
+const heroFavorites = $("heroFavorites");
+const heroRecent = $("heroRecent");
+const detailSheet = $("detailSheet");
+const detailTitle = $("detailTitle");
+const detailBody = $("detailBody");
+const detailPlayBtn = $("detailPlayBtn");
+const detailEditBtn = $("detailEditBtn");
+const detailPlaylistBtn = $("detailPlaylistBtn");
+const detailDeleteBtn = $("detailDeleteBtn");
 
 let db = null;
 let videos = [];
 let visibleVideos = [];
 let playlists = loadPlaylists();
+let selectedDetailId = null;
 let muted = true;
 let observer = null;
 let currentIndex = 0;
@@ -310,10 +323,24 @@ async function refresh({ keepIndex = false } = {}) {
   if (keepIndex && oldId) currentIndex = Math.max(0, visibleVideos.findIndex(v => v.id === oldId));
   if (currentIndex < 0) currentIndex = 0;
   if (currentIndex >= visibleVideos.length) currentIndex = Math.max(0, visibleVideos.length - 1);
+  renderHomeHero();
   renderFeed();
   renderLibrary();
   updatePlaylistFilter();
   updateStorage();
+}
+
+function renderHomeHero() {
+  const hasVideos = videos.length > 0;
+  homeHero.hidden = !hasVideos;
+  if (!hasVideos) return;
+  const totalSize = videos.reduce((sum, video) => sum + video.size, 0);
+  const favoriteCount = videos.filter(video => video.favorite).length;
+  const recent = [...videos].sort((a, b) => (b.lastPlayedAt || 0) - (a.lastPlayedAt || 0))[0];
+  heroTotalVideos.textContent = String(videos.length);
+  heroTotalSize.textContent = fmt(totalSize);
+  heroFavorites.textContent = String(favoriteCount);
+  heroRecent.textContent = recent?.lastPlayedAt ? recent.title : "Chưa có";
 }
 
 function applyFilters() {
@@ -349,7 +376,7 @@ function applyFilters() {
 }
 
 function renderFeed() {
-  empty.style.display = visibleVideos.length ? "none" : "grid";
+  empty.style.display = videos.length ? "none" : "grid";
   feed.innerHTML = "";
   videoElements.clear();
   if (observer) observer.disconnect();
@@ -564,16 +591,19 @@ function renderLibrary() {
   visibleVideos.forEach((video, index) => {
     const item = document.createElement("div");
     item.className = "item";
+    const fileLine = video.fileName && video.fileName !== video.title ? `${video.fileName} • ` : "";
+    const playedLine = video.lastPlayedAt ? ` • xem ${new Date(video.lastPlayedAt).toLocaleDateString("vi-VN")}` : "";
     item.innerHTML = `
       <div class="thumb">▶</div>
       <div class="itemMain">
         <h3>${esc(video.title)}</h3>
-        <p>${fmt(video.size)} • ${watchStatus(video)} • ${new Date(video.createdAt).toLocaleDateString("vi-VN")}</p>
+        <p>${esc(fileLine)}${fmtTime(video.duration)} • ${fmt(video.size)} • ${watchStatus(video)}${video.favorite ? " • ♥" : ""}${playedLine}</p>
         <p>${esc(video.note || "")}${video.tags.length ? " • #" + esc(video.tags.join(" #")) : ""}</p>
       </div>
       <div class="itemActions">
         <button class="mini play" type="button">Xem</button>
         <button class="mini fav" type="button">${video.favorite ? "♥" : "♡"}</button>
+        <button class="mini detail" type="button">Chi tiết</button>
         <button class="mini edit" type="button">Sửa</button>
         <button class="mini playlist" type="button">+PL</button>
         <button class="mini del" type="button">🗑</button>
@@ -583,6 +613,7 @@ function renderLibrary() {
       scrollToIndex(index);
     };
     item.querySelector(".fav").onclick = () => toggleFavorite(video.id);
+    item.querySelector(".detail").onclick = () => showVideoDetail(video.id);
     item.querySelector(".edit").onclick = () => editVideo(video.id);
     item.querySelector(".playlist").onclick = () => addVideoToPlaylist(video.id);
     item.querySelector(".del").onclick = () => removeVideo(video.id);
@@ -617,11 +648,60 @@ async function editVideo(id) {
   video.note = note.trim();
   video.tags = parseTags(tags);
   await updateVideo(video);
+  if (selectedDetailId === id) showVideoDetail(id);
   await refresh({ keepIndex: true });
 }
 
+function showVideoDetail(id) {
+  const video = videos.find(item => item.id === id);
+  if (!video) return;
+  selectedDetailId = id;
+  const playlistNames = playlists
+    .filter(playlist => playlist.videoIds.includes(id))
+    .map(playlist => playlist.name)
+    .join(", ") || "Chưa có";
+  detailTitle.textContent = video.title;
+  detailBody.innerHTML = [
+    ["Title", video.title],
+    ["File", video.fileName || video.title],
+    ["Size", fmt(video.size)],
+    ["Duration", fmtTime(video.duration)],
+    ["Status", watchStatus(video)],
+    ["Favorite", video.favorite ? "Có" : "Không"],
+    ["Tags", video.tags.length ? video.tags.join(", ") : "Chưa có"],
+    ["Note", video.note || "Chưa có"],
+    ["Playlist", playlistNames],
+    ["Play position", fmtTime(video.playPosition)],
+    ["Created", new Date(video.createdAt).toLocaleString("vi-VN")],
+    ["Updated", new Date(video.updatedAt).toLocaleString("vi-VN")]
+  ].map(([label, value]) => `<div class="detailRow"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
+  detailSheet.hidden = false;
+}
+
+function closeVideoDetail() {
+  selectedDetailId = null;
+  detailSheet.hidden = true;
+}
+
+function playDetailVideo() {
+  const index = visibleVideos.findIndex(video => video.id === selectedDetailId);
+  const fallbackIndex = videos.findIndex(video => video.id === selectedDetailId);
+  closeVideoDetail();
+  closeDrawer();
+  if (index >= 0) scrollToIndex(index);
+  else {
+    searchInput.value = "";
+    statusFilter.value = "all";
+    playlistFilter.value = "all";
+    refresh().then(() => {
+      const visibleIndex = visibleVideos.findIndex(video => video.id === videos[fallbackIndex]?.id);
+      if (visibleIndex >= 0) scrollToIndex(visibleIndex);
+    });
+  }
+}
+
 async function removeVideo(id) {
-  if (!confirm("Xóa video này khỏi bộ nhớ offline?")) return;
+  if (!confirm("Xóa video này khỏi bộ nhớ offline?")) return false;
   const videoEl = videoElements.get(id);
   if (videoEl) detachVideoSource(id, videoEl);
   await deleteVideo(id);
@@ -629,6 +709,7 @@ async function removeVideo(id) {
   savePlaylists();
   await refresh();
   toast("Đã xóa video.");
+  return true;
 }
 
 async function addFiles(files, inputEl) {
@@ -825,20 +906,63 @@ function createPlaylist() {
   return playlist;
 }
 
+function selectedPlaylist() {
+  return playlists.find(playlist => playlist.id === playlistFilter.value) || null;
+}
+
+function renameSelectedPlaylist() {
+  const playlist = selectedPlaylist();
+  if (!playlist) {
+    toast("Hãy chọn một playlist trước.");
+    return;
+  }
+  const name = prompt("Đổi tên playlist:", playlist.name);
+  if (!name?.trim()) return;
+  playlist.name = name.trim();
+  savePlaylists();
+  refresh({ keepIndex: true });
+}
+
+function deleteSelectedPlaylist() {
+  const playlist = selectedPlaylist();
+  if (!playlist) {
+    toast("Hãy chọn một playlist trước.");
+    return;
+  }
+  if (!confirm(`Xóa playlist "${playlist.name}"? Video sẽ không bị xóa.`)) return;
+  playlists = playlists.filter(item => item.id !== playlist.id);
+  playlistFilter.value = "all";
+  savePlaylists();
+  refresh({ keepIndex: true });
+  toast("Đã xóa playlist.");
+}
+
 function addVideoToPlaylist(videoId) {
-  let playlist = playlists[0];
+  let playlist = selectedPlaylist() || playlists[0];
+  if (playlist?.videoIds.includes(videoId)) {
+    if (confirm(`Bỏ video khỏi playlist "${playlist.name}"?`)) {
+      playlist.videoIds = playlist.videoIds.filter(id => id !== videoId);
+      savePlaylists();
+      if (selectedDetailId === videoId) showVideoDetail(videoId);
+      refresh({ keepIndex: true });
+      toast("Đã bỏ khỏi playlist.");
+    }
+    return;
+  }
   if (!playlist || !confirm(`Thêm vào playlist "${playlist.name}"? Bấm Cancel để tạo playlist mới.`)) {
     playlist = createPlaylist();
   }
   if (!playlist) return;
   if (!playlist.videoIds.includes(videoId)) playlist.videoIds.push(videoId);
   savePlaylists();
+  if (selectedDetailId === videoId) showVideoDetail(videoId);
+  refresh({ keepIndex: true });
   toast("Đã thêm vào playlist.");
 }
 
 function exportMetadata() {
   const payload = {
-    app: "VinhVideo Offline",
+    app: "Offline Cinema",
     version: APP_VERSION,
     exportedAt: new Date().toISOString(),
     warning: "This file does not include video blobs.",
@@ -903,6 +1027,14 @@ function closeDrawer() {
 
 $("menuBtn").onclick = openDrawer;
 $("emptyAddBtn").onclick = openDrawer;
+$("heroAddBtn").onclick = openDrawer;
+$("heroLibraryBtn").onclick = openDrawer;
+$("continueBtn").onclick = () => {
+  homeHero.hidden = true;
+  const recent = [...visibleVideos].sort((a, b) => (b.lastPlayedAt || 0) - (a.lastPlayedAt || 0))[0];
+  const index = recent ? visibleVideos.findIndex(video => video.id === recent.id) : 0;
+  scrollToIndex(Math.max(0, index));
+};
 $("closeBtn").onclick = closeDrawer;
 drawer.addEventListener("click", event => {
   if (event.target === drawer) closeDrawer();
@@ -919,27 +1051,24 @@ lowEndToggle.onchange = () => {
   lowEndMode = lowEndToggle.checked;
   applyLowEndMode();
 };
+for (const chip of document.querySelectorAll("#filterChips .chip")) {
+  chip.onclick = () => {
+    statusFilter.value = chip.dataset.filter;
+    document.querySelectorAll("#filterChips .chip").forEach(item => item.classList.toggle("active", item === chip));
+    refresh({ keepIndex: true });
+  };
+}
 $("muteBtn").onclick = () => {
   muted = !muted;
   for (const videoEl of videoElements.values()) videoEl.muted = muted;
   $("muteBtn").textContent = muted ? "🔇" : "🔊";
 };
-$("allBtn").onclick = () => {
-  statusFilter.value = "all";
-  $("allBtn").classList.add("active");
-  $("favBtn").classList.remove("active");
-  refresh({ keepIndex: true });
-};
-$("favBtn").onclick = () => {
-  statusFilter.value = "fav";
-  $("favBtn").classList.add("active");
-  $("allBtn").classList.remove("active");
-  refresh({ keepIndex: true });
-};
 $("newPlaylistBtn").onclick = () => {
   createPlaylist();
   refresh({ keepIndex: true });
 };
+$("renamePlaylistBtn").onclick = renameSelectedPlaylist;
+$("deletePlaylistBtn").onclick = deleteSelectedPlaylist;
 $("exportBtn").onclick = exportMetadata;
 $("clearBtn").onclick = async () => {
   if (!confirm("Xóa toàn bộ video offline? Metadata và video blob sẽ bị xóa khỏi IndexedDB.")) return;
@@ -954,11 +1083,24 @@ searchInput.oninput = () => refresh({ keepIndex: true });
 sortSelect.onchange = () => refresh({ keepIndex: true });
 statusFilter.onchange = () => refresh({ keepIndex: true });
 playlistFilter.onchange = () => refresh({ keepIndex: true });
+detailSheet.addEventListener("click", event => {
+  if (event.target === detailSheet) closeVideoDetail();
+});
+$("detailCloseBtn").onclick = closeVideoDetail;
+detailPlayBtn.onclick = playDetailVideo;
+detailEditBtn.onclick = () => selectedDetailId && editVideo(selectedDetailId);
+detailPlaylistBtn.onclick = () => selectedDetailId && addVideoToPlaylist(selectedDetailId);
+detailDeleteBtn.onclick = () => {
+  if (!selectedDetailId) return;
+  removeVideo(selectedDetailId).then(deleted => {
+    if (deleted) closeVideoDetail();
+  });
+};
 window.addEventListener("online", () => toast("Đã có internet."));
 window.addEventListener("offline", () => toast("Đang ở chế độ offline."));
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.3.0").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.6.0").catch(() => {}));
 }
 
 (async () => {

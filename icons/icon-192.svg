@@ -4,5 +4,5 @@
   <circle cx="126" cy="132" r="74" fill="#ff2d75" opacity=".52"/>
   <rect x="40" y="48" width="112" height="96" rx="26" fill="#101827" stroke="rgba(255,255,255,.32)" stroke-width="4"/>
   <path d="M82 74v44l39-22z" fill="#fff"/>
-  <text x="96" y="165" fill="#fff" font-family="Arial, sans-serif" font-size="18" font-weight="800" text-anchor="middle">VINH</text>
+  <text x="96" y="165" fill="#fff" font-family="Arial, sans-serif" font-size="17" font-weight="800" text-anchor="middle">CINEMA</text>
 </svg>

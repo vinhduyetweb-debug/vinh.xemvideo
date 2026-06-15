@@ -1,72 +1,109 @@
-# VinhVideo Offline TikTok PWA
+# Offline Cinema
 
-VinhVideo Offline v1.3.0 là mini app static PWA để lưu và xem video offline trong trình duyệt bằng IndexedDB. App không có backend, không dùng framework, không cần build step và vẫn deploy trực tiếp lên Vercel static.
+Offline Cinema by VinhVideo is a static, local-first PWA for watching personal videos offline in a vertical feed. It uses IndexedDB for browser storage, keeps the app shell available offline, and stays deployable as plain HTML/CSS/JavaScript on Vercel.
 
-## Tính năng chính
-- Chọn nhiều video hoặc chọn thư mục video.
-- Lưu video offline bằng IndexedDB.
-- Feed dọc kiểu TikTok với scroll-snap, autoplay video đang xem, mute/unmute.
-- Favorite, filter favorite, search, sort, trạng thái đã xem/chưa xem.
-- Đổi title trong app, thêm note và tags.
-- Playlist đơn giản lưu trong localStorage.
-- Resume playback, seek progress, tua lùi/tới 10 giây.
-- Export/import metadata JSON, không export file video thật.
-- PWA cache app shell để mở lại khi offline.
+## What It Does
+- Saves personal videos offline in the browser with IndexedDB.
+- Plays videos in a vertical cinema/feed interface.
+- Keeps low-end phones usable with Low-End Mode and lazy video loading.
+- Provides search, filters, sorting, playlists, notes, tags, favorites, watch status, resume playback, seek, and +/-10 second controls.
+- Exports and imports metadata backup JSON without exporting real video files.
 
-## IndexedDB V1.3
-Database vẫn là `vinhvideo_offline_db_v1`.
+## Portfolio Copy
+Offline Cinema là mini app PWA xem video cá nhân offline theo dạng feed dọc. App lưu video trong trình duyệt bằng IndexedDB, tối ưu cho điện thoại cấu hình thấp với Low-End Mode, lazy loading và quản lý bộ nhớ. Phù hợp để xem nhanh video cá nhân khi không có mạng, nhưng không thay thế backup gốc trên máy/ổ cứng/cloud.
 
-Schema v2:
-- Store `videos`: chỉ chứa metadata video.
-- Store `videoBlobs`: chứa `{ id, blob }`.
+## Key Strengths
+- Static PWA: no backend, no account, no framework, no build step.
+- Local-first privacy: video stays in the user's browser storage.
+- Data-safe IndexedDB v2 layout: metadata and video blobs are separated.
+- Mobile-first performance: only current +/-1 videos keep active object URLs.
+- Storage transparency: quota, usage, persistent storage status, and warnings are visible in-app.
 
-Khi mở app, migration v1 -> v2 dùng cursor để duyệt từng record cũ trong `videos`. Nếu record cũ có field `blob`, app chuyển blob sang `videoBlobs`, xóa blob khỏi metadata và update lại record metadata. Cách này tránh `getAll()` kéo toàn bộ Blob lớn vào RAM.
+## Important Limits
+- IndexedDB is not permanent backup storage.
+- Browser or OS cleanup can remove site/PWA data when storage is low or site data is cleared.
+- iPhone/iPad storage limits are stricter than desktop browsers.
+- Export metadata does not include video blobs.
+- The app does not transcode/compress videos and does not export ZIP video archives.
 
 ## Low-End Mode
-App tự bật "Chế độ máy yếu" nếu phát hiện mobile/tablet, `navigator.deviceMemory <= 4`, hoặc `navigator.hardwareConcurrency <= 4`. Người dùng có thể bật/tắt trong drawer, lưu tại `localStorage` key `vinhvideo.lowEndMode`.
+Low-End Mode auto-enables on mobile/tablet, low device memory, or low CPU devices. It can be toggled in the drawer and is stored in `localStorage` as `vinhvideo.lowEndMode`.
 
-Khi bật:
-- Video dùng `preload="none"`.
-- Chỉ attach src/objectURL cho video hiện tại và video liền kề.
-- Video xa màn hình bị pause, remove src, `load()` và revoke objectURL.
-- Giảm blur/backdrop-filter và tắt smooth scroll để đỡ giật.
+When enabled:
+- Video preload is minimized.
+- Only current, previous, and next videos keep attached sources.
+- Far videos are paused, detached, unloaded, and their object URLs are revoked.
+- Heavy blur/shadow/smooth-scroll effects are reduced.
 
-## Giới hạn IndexedDB và video lớn
-- IndexedDB không phải backup vĩnh viễn.
-- Trình duyệt/hệ điều hành có thể dọn dữ liệu khi thiếu bộ nhớ, xóa site data, đổi trình duyệt hoặc gỡ PWA.
-- Luôn giữ video gốc ở ổ cứng, Google Drive, iCloud, NAS hoặc nơi backup riêng.
-- Video trên 200MB sẽ được cảnh báo mạnh; Low-End Mode khuyến nghị mỗi video không quá 150MB.
-- Tổng import trên 1GB có thể chạm quota trình duyệt.
-- iPhone/iPad thường giới hạn storage chặt hơn desktop và có thể dọn dữ liệu PWA khi thiết bị thiếu dung lượng.
+## IndexedDB Storage
+Database name stays:
 
-## Metadata backup/import
-Export metadata tạo file:
+```text
+vinhvideo_offline_db_v1
+```
+
+Current schema:
+- `videos`: metadata only.
+- `videoBlobs`: `{ id, blob }`.
+
+The v1 to v2 migration uses a cursor over `videos`, moves legacy `blob` fields into `videoBlobs`, removes `blob` from metadata, and keeps existing metadata such as favorite, tags, note, and play position.
+
+## Metadata Backup
+Export creates:
 
 ```text
 vinhvideo-metadata-backup-YYYYMMDD-HHmm.json
 ```
 
-File JSON có `app`, `version`, `exportedAt`, `warning`, `videos`, `playlists`. File này không chứa video blob thật. Import metadata chỉ merge metadata an toàn với video đang còn blob trong IndexedDB; nếu blob đã mất, import không khôi phục được file video.
+The backup includes app/version/export time, warning text, video metadata, and playlists. It does not include real video files. Import safely merges metadata only when the video blob still exists in IndexedDB.
 
-## Test mobile khuyến nghị
-- Import 1 video nhỏ.
-- Import nhiều video.
-- Import file trùng.
-- Hủy import giữa chừng.
-- Bật/tắt Low-End Mode.
-- Vuốt feed nhiều video, pause/play, mute/unmute.
-- Seek progress và tua 10 giây.
-- Favorite, filter, search, sort.
-- Đổi title, thêm note/tag, thêm playlist.
-- Export metadata, reload app, import metadata.
-- Tắt mạng rồi mở lại app shell.
-- Kiểm tra Storage Health và cảnh báo quota.
+## Run Local
+Any static server works. Example:
+
+```bash
+python -m http.server 3000
+```
+
+Open:
+
+```text
+http://localhost:3000/
+```
 
 ## Deploy Vercel
-Kéo thả thư mục lên Vercel hoặc chạy:
+Deploy the folder as a static site:
 
 ```bash
 vercel --prod
 ```
 
-App vẫn là static PWA, không cần build step.
+`vercel.json` keeps the output directory as the project root.
+
+## Test Checklist
+- Open app with no videos.
+- Open app with existing videos.
+- Import one small video.
+- Import multiple videos.
+- Import duplicate video.
+- Cancel import midway.
+- Play, pause, mute/unmute, swipe, seek, and use +/-10 seconds.
+- Favorite, search, filter, sort.
+- Edit title, note, and tags.
+- Create, rename, delete, and filter playlists.
+- Export metadata and import metadata.
+- Reload app and confirm video metadata/blob still exist.
+- Toggle Low-End Mode on/off.
+- Check Storage Health and persistent storage warning.
+- Turn network off and confirm the PWA shell still opens.
+
+## Screenshots
+- Home
+- Player
+- Library
+- Storage Health
+
+## Roadmap After V1.6
+- Optional manual cover image per video without auto thumbnail generation.
+- Optional grouped collections beyond simple playlists.
+- More robust manual QA scripts for IndexedDB migration.
+- Better accessibility labels and keyboard controls.

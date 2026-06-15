@@ -3,25 +3,48 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#05070d" />
-  <title>VinhVideo Offline</title>
+  <meta name="theme-color" content="#090b10" />
+  <title>Offline Cinema</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css?v=1.3.0" />
+  <link rel="stylesheet" href="style.css?v=1.6.0" />
 </head>
 <body>
   <main id="appRoot" class="app">
     <header class="topbar">
       <button id="menuBtn" class="pill" type="button">☰ Thư viện</button>
-      <div class="brand">VINHVIDEO</div>
+      <div class="brand">
+        <strong>Offline Cinema</strong>
+        <span>by VinhVideo</span>
+      </div>
       <button id="muteBtn" class="pill" type="button">🔇</button>
     </header>
 
     <section id="empty" class="empty">
       <div class="logo">▶</div>
-      <h1>VinhVideo Offline</h1>
-      <p>Chọn video từ điện thoại, lưu offline và xem kiểu TikTok.</p>
-      <button id="emptyAddBtn" class="primary" type="button">+ Thêm video</button>
-      <small>IndexedDB giúp xem offline, nhưng không thay thế bản video gốc.</small>
+      <p class="eyebrow">by VinhVideo</p>
+      <h1>Offline Cinema</h1>
+      <p>Kho video cá nhân để xem khi không có mạng.</p>
+      <button id="emptyAddBtn" class="primary" type="button">Thêm video đầu tiên</button>
+      <small>Video được lưu tạm trong trình duyệt. Hãy giữ bản gốc ở máy/ổ cứng/cloud.</small>
+    </section>
+
+    <section id="homeHero" class="homeHero" hidden>
+      <div>
+        <p class="eyebrow">VinhVideo Offline Cinema · v1.6.0</p>
+        <h1>Offline Cinema</h1>
+        <p>Kho video cá nhân offline, tối ưu cho điện thoại yếu.</p>
+      </div>
+      <div class="heroStats">
+        <div><span>Tổng video</span><strong id="heroTotalVideos">0</strong></div>
+        <div><span>Dung lượng</span><strong id="heroTotalSize">0 MB</strong></div>
+        <div><span>Yêu thích</span><strong id="heroFavorites">0</strong></div>
+        <div><span>Xem gần đây</span><strong id="heroRecent">Chưa có</strong></div>
+      </div>
+      <div class="heroActions">
+        <button id="continueBtn" class="primary" type="button">Tiếp tục xem</button>
+        <button id="heroAddBtn" class="ghostBtn" type="button">Thêm video</button>
+        <button id="heroLibraryBtn" class="ghostBtn" type="button">Mở thư viện</button>
+      </div>
     </section>
 
     <section id="feed" class="feed" aria-label="Video feed"></section>
@@ -30,77 +53,112 @@
       <div class="panel">
         <div class="panelHead">
           <div>
-            <h2>Thư viện video</h2>
+            <p class="eyebrow">Offline Cinema</p>
+            <h2>Thư viện cá nhân</h2>
             <p id="storageInfo">Đang tải...</p>
-            <small id="appVersion">VinhVideo Offline v1.3.0</small>
           </div>
           <button id="closeBtn" class="iconBtn" type="button" aria-label="Đóng">×</button>
         </div>
 
-        <div class="actionsRow">
-          <label class="blockBtn primary">+ Chọn video<input id="fileInput" hidden type="file" accept="video/*" multiple /></label>
-          <label class="blockBtn">+ Chọn thư mục<input id="folderInput" hidden type="file" accept="video/*" webkitdirectory multiple /></label>
-        </div>
-
-        <section class="storageHealth" aria-label="Storage health">
-          <div class="healthGrid">
-            <div><span>Tổng video</span><strong id="healthVideoCount">0</strong></div>
-            <div><span>Video offline</span><strong id="healthOfflineSize">0 MB</strong></div>
-            <div><span>Đang dùng</span><strong id="healthUsage">Đang tải...</strong></div>
-            <div><span>Quota ước tính</span><strong id="healthQuota">Đang tải...</strong></div>
-            <div><span>Đã dùng quota</span><strong id="healthPercent">Không rõ</strong></div>
-            <div><span>Mức an toàn</span><strong id="healthLevel">Đang tải...</strong></div>
+        <section class="drawerGroup">
+          <h3>Thư viện</h3>
+          <div class="actionsRow">
+            <label class="blockBtn primary">+ Chọn video<input id="fileInput" hidden type="file" accept="video/*" multiple /></label>
+            <label class="blockBtn">+ Chọn thư mục<input id="folderInput" hidden type="file" accept="video/*" webkitdirectory multiple /></label>
           </div>
-          <div class="persistRow">
-            <span>Persistent storage</span>
-            <strong id="healthPersist">Đang tải...</strong>
-            <button id="persistBtn" class="mini" type="button" hidden>Yêu cầu bảo vệ bộ nhớ</button>
+          <div class="libraryTools">
+            <input id="searchInput" type="search" placeholder="Tìm title, file, note, tag..." />
+            <select id="sortSelect">
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+              <option value="largest">Dung lượng lớn nhất</option>
+              <option value="az">Tên A-Z</option>
+              <option value="recent">Xem gần đây</option>
+            </select>
+            <select id="playlistFilter">
+              <option value="all">Mọi playlist</option>
+            </select>
           </div>
-          <div id="healthWarning" class="storageWarning" hidden></div>
+          <div class="chipRow" id="filterChips">
+            <button class="chip active" type="button" data-filter="all">Tất cả</button>
+            <button class="chip" type="button" data-filter="fav">Yêu thích</button>
+            <button class="chip" type="button" data-filter="seen">Đã xem</button>
+            <button class="chip" type="button" data-filter="unseen">Chưa xem</button>
+            <button class="chip" type="button" data-filter="large">Video lớn</button>
+          </div>
+          <input id="statusFilter" type="hidden" value="all" />
+          <div class="playlistTools">
+            <button id="newPlaylistBtn" class="small" type="button">+ Playlist</button>
+            <button id="renamePlaylistBtn" class="small" type="button">Đổi tên playlist</button>
+            <button id="deletePlaylistBtn" class="small dangerSoft" type="button">Xóa playlist</button>
+          </div>
+          <div id="libraryList" class="libraryList"></div>
         </section>
 
-        <label class="toggleRow">
-          <span>
-            <strong>Chế độ máy yếu</strong>
-            <small>Ít preload, ít blur, giữ ít video trong RAM hơn.</small>
-          </span>
-          <input id="lowEndToggle" type="checkbox" />
-        </label>
+        <section class="drawerGroup">
+          <h3>Bộ nhớ</h3>
+          <section class="storageHealth" aria-label="Storage health">
+            <div class="healthGrid">
+              <div><span>Tổng video</span><strong id="healthVideoCount">0</strong></div>
+              <div><span>Video offline</span><strong id="healthOfflineSize">0 MB</strong></div>
+              <div><span>Đang dùng</span><strong id="healthUsage">Đang tải...</strong></div>
+              <div><span>Quota ước tính</span><strong id="healthQuota">Đang tải...</strong></div>
+              <div><span>Đã dùng quota</span><strong id="healthPercent">Không rõ</strong></div>
+              <div><span>Mức an toàn</span><strong id="healthLevel">Đang tải...</strong></div>
+            </div>
+            <div class="persistRow">
+              <span>Persistent storage</span>
+              <strong id="healthPersist">Đang tải...</strong>
+              <button id="persistBtn" class="mini" type="button" hidden>Yêu cầu bảo vệ bộ nhớ</button>
+            </div>
+            <div id="healthWarning" class="storageWarning" hidden></div>
+          </section>
+          <label class="toggleRow">
+            <span>
+              <strong>Chế độ máy yếu</strong>
+              <small>Ít preload, ít blur, giữ ít video trong RAM hơn.</small>
+            </span>
+            <input id="lowEndToggle" type="checkbox" />
+          </label>
+        </section>
 
-        <div class="libraryTools">
-          <input id="searchInput" type="search" placeholder="Tìm title, file, note, tag..." />
-          <select id="sortSelect">
-            <option value="newest">Mới nhất</option>
-            <option value="oldest">Cũ nhất</option>
-            <option value="largest">Dung lượng lớn nhất</option>
-            <option value="az">Tên A-Z</option>
-            <option value="recent">Xem gần đây</option>
-          </select>
-          <select id="statusFilter">
-            <option value="all">Tất cả</option>
-            <option value="fav">Yêu thích</option>
-            <option value="seen">Đã xem</option>
-            <option value="unseen">Chưa xem</option>
-            <option value="large">Video lớn</option>
-          </select>
-          <select id="playlistFilter">
-            <option value="all">Mọi playlist</option>
-          </select>
-        </div>
+        <section class="drawerGroup">
+          <h3>Dữ liệu</h3>
+          <div class="filterRow">
+            <button id="exportBtn" class="small" type="button">Export metadata</button>
+            <label class="small importMeta">Import metadata<input id="metadataInput" hidden type="file" accept="application/json,.json" /></label>
+          </div>
+          <div class="hint">Export metadata không chứa file video thật. Import metadata không khôi phục video nếu blob đã mất khỏi IndexedDB.</div>
+          <button id="clearBtn" class="danger full" type="button">Xóa toàn bộ video offline</button>
+        </section>
 
-        <div class="filterRow">
-          <button id="allBtn" class="small active" type="button">Tất cả</button>
-          <button id="favBtn" class="small" type="button">Yêu thích</button>
-          <button id="newPlaylistBtn" class="small" type="button">+ Playlist</button>
-          <button id="exportBtn" class="small" type="button">Export metadata</button>
-          <label class="small importMeta">Import metadata<input id="metadataInput" hidden type="file" accept="application/json,.json" /></label>
-        </div>
-
-        <div class="hint">IndexedDB không phải backup vĩnh viễn. Hãy giữ video gốc ở máy, ổ cứng hoặc cloud. Export metadata không chứa file video thật.</div>
-        <div id="libraryList" class="libraryList"></div>
-        <button id="clearBtn" class="danger full" type="button">Xóa toàn bộ video offline</button>
+        <section class="drawerGroup aboutBox">
+          <h3>Ứng dụng</h3>
+          <p><strong>Offline Cinema</strong> by VinhVideo · v1.6.0</p>
+          <p>Local-first · No backend · PWA offline shell</p>
+          <p>Video nằm trong IndexedDB của trình duyệt và không phải backup vĩnh viễn.</p>
+        </section>
       </div>
     </aside>
+
+    <section id="detailSheet" class="detailSheet" hidden>
+      <div class="sheetCard">
+        <div class="sheetHead">
+          <div>
+            <p class="eyebrow">Video detail</p>
+            <h2 id="detailTitle">Video</h2>
+          </div>
+          <button id="detailCloseBtn" class="iconBtn" type="button" aria-label="Đóng">×</button>
+        </div>
+        <div id="detailBody" class="detailBody"></div>
+        <div class="sheetActions">
+          <button id="detailPlayBtn" class="primary" type="button">Phát video này</button>
+          <button id="detailEditBtn" class="ghostBtn" type="button">Sửa metadata</button>
+          <button id="detailPlaylistBtn" class="ghostBtn" type="button">Playlist</button>
+          <button id="detailDeleteBtn" class="danger" type="button">Xóa</button>
+        </div>
+      </div>
+    </section>
 
     <section id="importModal" class="modal" hidden>
       <div class="modalCard">
@@ -112,6 +170,6 @@
       </div>
     </section>
   </main>
-  <script src="app.js?v=1.3.0"></script>
+  <script src="app.js?v=1.6.0"></script>
 </body>
 </html>
