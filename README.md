@@ -147,7 +147,12 @@ vercel --prod
 - Better accessibility labels and keyboard controls.
 
 
-## V1.9.4 Stability Hotfix
+## V1.9.5 Stability Hotfix
 - Repairs Vietnamese encoding in static UI and runtime strings.
 - Repairs old IndexedDB metadata text without touching valid video blobs.
 - Keeps orphan video repair helpers for metadata records that lost their blob.
+
+
+## V1.9.5 Dialog Text Sweep
+- Fixes Vietnamese text in native browser dialogs, prompts, confirmations, import preflight warnings, and toast messages.
+- Keeps the app static and does not change IndexedDB names, version, or valid video blobs.

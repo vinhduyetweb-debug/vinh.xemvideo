@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.4";
+const APP_VERSION = "1.9.5";
 const DB_NAME = "vinhvideo_offline_db_v1";
 const DB_VERSION = 2;
 const STORE = "videos";
@@ -28,6 +28,7 @@ const CHILD_BIRTH_DATE_KEY = "offlineCinema.childBirthDate";
 const LARGE_FILE_BYTES = 200 * 1024 * 1024;
 const LOW_END_FILE_BYTES = 150 * 1024 * 1024;
 const LARGE_IMPORT_BYTES = 1024 * 1024 * 1024;
+
 
 const TEXT = {
   phoneSource: "Điện thoại",
@@ -88,9 +89,101 @@ const TEXT = {
   routineStatus: "Trạng thái routine",
   contentBalance: "Cân bằng nội dung",
   noFamilyMetadata: "Chưa có metadata ký ức gia đình.",
-  exportWarning: "Export metadata không chứa file video thật. Import metadata không khôi phục video nếu blob đã mất khỏi IndexedDB."
+  exportWarning: "Export metadata không chứa file video thật. Import metadata không khôi phục video nếu blob đã mất khỏi IndexedDB.",
+  dialog: {
+    prepareSave: "Chuẩn bị lưu",
+    video: "video",
+    total: "tổng",
+    largestFile: "file lớn nhất",
+    largeVideoWarning: "Có video trên 200MB, lưu trên điện thoại yếu có thể rất chậm.",
+    largeImportWarning: "Tổng import trên 1GB, quota trình duyệt có thể không đủ.",
+    lowEndWarning: "Chế độ máy yếu khuyến nghị mỗi video <= 150MB.",
+    continueQuestion: "Bạn muốn tiếp tục?",
+    noVideoFound: "Không tìm thấy video.",
+    savingVideo: "Đang lưu video",
+    savedBytes: "đã lưu",
+    importDone: "Import xong",
+    saved: "lưu",
+    skipped: "bỏ qua",
+    error: "lỗi",
+    duplicateVideo: "Video này có vẻ đã tồn tại.",
+    duplicateChoice: "Nhập: skip, save, all",
+    deleteVideoConfirm: "Xóa video này khỏi bộ nhớ offline?",
+    videoDeleted: "Đã xóa video.",
+    clearAllConfirmTitle: "Xóa toàn bộ video offline?",
+    clearAllConfirmBody: "Metadata và video blob sẽ bị xóa khỏi IndexedDB.",
+    libraryCleared: "Đã xóa thư viện.",
+    repairBrokenTitle: "Dọn video lỗi",
+    repairBrokenBody: "Thao tác này chỉ xóa metadata của video đã mất file, không xóa video còn phát được.",
+    repairedBroken: "Đã dọn metadata lỗi.",
+    repairFailed: "Dọn video lỗi thất bại.",
+    setPin: "Đặt PIN 4 số cho Chế độ của Ba:",
+    repeatPin: "Nhập lại PIN:",
+    pinNeedsFourDigits: "PIN cần đúng 4 số.",
+    pinMismatch: "PIN nhập lại không khớp.",
+    parentPinEnabled: "Đã bật PIN phụ huynh.",
+    exitKidsNoPin: "Thoát Chế độ của Con để về Chế độ của Ba?",
+    verifyPin: "Nhập PIN 4 số để về Chế độ của Ba:",
+    wrongPin: "PIN không đúng.",
+    clearPinConfirm: "Xóa PIN phụ huynh?",
+    pinCleared: "Đã xóa PIN.",
+    editTitle: "Đổi tên title trong app:",
+    shortNote: "Note ngắn:",
+    tagsPrompt: "Tags, ngăn cách bằng dấu phẩy:",
+    allowKidsVideo: "Cho con xem video này?",
+    keepKidsApproval: "Video đang cho con xem. Bấm OK để giữ duyệt, Cancel để bỏ duyệt.",
+    kidsCategoryPrompt: "Kids category (family, music, learning hoặc để trống):",
+    kidsEnergyPrompt: "Năng lượng: calm, normal, active",
+    kidsTimePrompt: "Thời điểm: anytime, daytime, notBeforeSleep",
+    kidsQuestionPrompt: "Câu hỏi sau video cho con:",
+    parentNotePrompt: "Ghi chú ngắn cho Ba/Mẹ:",
+    familyTypePrompt: "Family type: family, child-memory, learning, music, movement, bedtime, reward, other",
+    memoryDatePrompt: "Memory date (YYYY-MM-DD):",
+    childAgePrompt: "Mốc tuổi của con:",
+    peoplePrompt: "Người xuất hiện, ngăn cách bằng dấu phẩy:",
+    locationPrompt: "Địa điểm:",
+    memoryNotePrompt: "Ghi chú ký ức:",
+    memoryQuestionPrompt: "Câu hỏi ký ức sau video:",
+    khoBauRefPrompt: "KHOBAUKYUC ref text/link/id:",
+    exportMetadataDone: "Đã export metadata. Export metadata không chứa video thật.",
+    invalidMetadata: "File metadata không hợp lệ.",
+    missingBlob: "Video blob không còn trong IndexedDB. Metadata vẫn còn nhưng file video đã mất.",
+    quotaNotEnough: "Bộ nhớ trình duyệt không đủ.",
+    unreadableFile: "Không đọc được file.",
+    importCancelled: "Import bị hủy.",
+    indexedDbError: "Lỗi IndexedDB hoặc trình duyệt.",
+    importStatusPrefix: "Import metadata",
+    missingBlobItems: "mục thiếu video blob",
+    noStoragePersist: "Trình duyệt không hỗ trợ persistent storage.",
+    persistAccepted: "Đã yêu cầu bảo vệ bộ nhớ.",
+    persistDenied: "Trình duyệt chưa cấp bảo vệ bộ nhớ.",
+    choosePlaylistFirst: "Hãy chọn một playlist trước.",
+    newPlaylistName: "Tên playlist mới:",
+    renamePlaylist: "Đổi tên playlist:",
+    deletePlaylistQuestion: "Xóa playlist",
+    playlistVideoKept: "Video sẽ không bị xóa.",
+    playlistDeleted: "Đã xóa playlist.",
+    playlistShownKids: "Playlist sẽ hiện trong Kids Mode.",
+    playlistHiddenKids: "Playlist đã ẩn khỏi Kids Mode.",
+    removeFromPlaylist: "Bỏ video khỏi playlist",
+    removedFromPlaylist: "Đã bỏ khỏi playlist.",
+    addToPlaylist: "Thêm vào playlist",
+    cancelToCreatePlaylist: "Bấm Cancel để tạo playlist mới.",
+    addedToPlaylist: "Đã thêm vào playlist.",
+    resetTodayDone: "Đã reset thống kê hôm nay.",
+    clearKidsLogConfirm: "Xóa lịch sử xem local của con?",
+    online: "Đã có internet.",
+    offline: "Đang ở chế độ offline.",
+    cancelAfterCurrent: "Sẽ hủy sau file hiện tại.",
+    dbOpenFailed: "Không mở được thư viện IndexedDB trên trình duyệt này.",
+    storageUnknown: "Không đọc được usage/quota.",
+    storageDanger: "Dung lượng đang ở mức nguy hiểm trên 80% quota.",
+    storageWarn: "Dung lượng đã qua 50% quota, nên dọn bớt video lớn.",
+    persistentUnprotected: "Persistent storage chưa được bảo vệ.",
+    orphanWarning: "metadata video thiếu blob. Đây là video offline bị lỗi và có thể dọn."
+  }
 };
-const TEXT_REPAIR_VERSION = "1.9.4";
+const TEXT_REPAIR_VERSION = "1.9.5";
 
 
 const $ = id => document.getElementById(id);
@@ -308,6 +401,44 @@ function getVisibleTextBadPatterns() {
   ];
 }
 
+
+function buildImportPreflightMessage(selected, totalBytes, largest) {
+  const lines = [
+    `${TEXT.dialog.prepareSave} ${selected.length} ${TEXT.dialog.video}, ${TEXT.dialog.total} ${fmt(totalBytes)}, ${TEXT.dialog.largestFile} ${fmt(largest)}.`
+  ];
+  if (largest > LARGE_FILE_BYTES) lines.push(TEXT.dialog.largeVideoWarning);
+  if (totalBytes > LARGE_IMPORT_BYTES) lines.push(TEXT.dialog.largeImportWarning);
+  if (lowEndMode && largest > LOW_END_FILE_BYTES) lines.push(TEXT.dialog.lowEndWarning);
+  lines.push(TEXT.dialog.continueQuestion);
+  return lines.join("\n");
+}
+
+function dialogTextValues() {
+  const values = Object.values(TEXT.dialog || {});
+  values.push(buildImportPreflightMessage([{}], 58.5 * 1024 * 1024, 58.5 * 1024 * 1024));
+  values.push(`${TEXT.dialog.importDone}: ${TEXT.dialog.saved} 1, ${TEXT.dialog.skipped} 0, ${TEXT.dialog.error} 0.`);
+  return values;
+}
+
+function getDialogBadPatterns() {
+  return [
+    "Chu n b", " l u ", " t ng ", "l n nh t", "B n mu n", "ti p t c",
+    "Xoa", "Doi ten", "Nhap", "Khong", "Da ", "Luu", "Bo qua", "Loi", "Chua",
+    "phu huynh", "Che do", "\u00c3", "\u00c4", "\u00e1\u00ba", "\u00e1\u00bb"
+  ];
+}
+
+function scanDialogText() {
+  const issues = [];
+  const patterns = getDialogBadPatterns();
+  for (const text of dialogTextValues()) {
+    for (const pattern of patterns) {
+      if (String(text).includes(pattern)) issues.push({ pattern, text });
+    }
+  }
+  return issues;
+}
+
 function scanVisibleText() {
   const text = document.body?.innerText || "";
   return getVisibleTextBadPatterns().filter(pattern => text.includes(pattern));
@@ -322,7 +453,7 @@ function encodingHealthCheck() {
   return [...new Set([...found, ...visible])];
 }
 
-function scanBadText() { return { metadata: scanBadTextInMetadata(), document: encodingHealthCheck(), visible: scanVisibleText() }; }
+function scanBadText() { return { metadata: scanBadTextInMetadata(), document: encodingHealthCheck(), visible: scanVisibleText(), dialogs: scanDialogText() }; }
 
 async function countMetadata() { return (await getAllMetadata()).length; }
 async function countBlobs() { return (await getBlobIds()).length; }
@@ -431,38 +562,39 @@ function validPin(pin) {
   return /^\d{4}$/.test(String(pin || ""));
 }
 
+
 async function setParentPin() {
-  const pin = prompt("     t PIN 4 s    cho Ch          c   a Ba:");
+  const pin = prompt(TEXT.dialog.setPin);
   if (!validPin(pin)) {
-    toast("PIN c   n     ng 4 s   .");
+    toast(TEXT.dialog.pinNeedsFourDigits);
     return;
   }
-  const confirmPin = prompt("Nh   p l   i PIN:");
+  const confirmPin = prompt(TEXT.dialog.repeatPin);
   if (pin !== confirmPin) {
-    toast("PIN nh   p l   i kh  ng kh   p.");
+    toast(TEXT.dialog.pinMismatch);
     return;
   }
   localStorage.setItem(PIN_HASH_KEY, await hashPin(pin));
   localStorage.setItem(PIN_ENABLED_KEY, "1");
   syncKidsSettingsUI();
-  toast("     b   t PIN ph    huynh.");
+  toast(TEXT.dialog.parentPinEnabled);
 }
 
 async function verifyParentPin() {
-  if (!pinEnabled()) return confirm("Tho  t Ch          c   a Con       v    Ch          c   a Ba?");
-  const pin = prompt("Nh   p PIN 4 s          v    Ch          c   a Ba:");
+  if (!pinEnabled()) return confirm(TEXT.dialog.exitKidsNoPin);
+  const pin = prompt(TEXT.dialog.verifyPin);
   if (!validPin(pin)) return false;
   const ok = await hashPin(pin) === localStorage.getItem(PIN_HASH_KEY);
-  if (!ok) toast("PIN kh  ng     ng.");
+  if (!ok) toast(TEXT.dialog.wrongPin);
   return ok;
 }
 
 function clearParentPin() {
-  if (!confirm("X  a PIN ph    huynh?")) return;
+  if (!confirm(TEXT.dialog.clearPinConfirm)) return;
   localStorage.removeItem(PIN_HASH_KEY);
   localStorage.setItem(PIN_ENABLED_KEY, "0");
   syncKidsSettingsUI();
-  toast("     x  a PIN.");
+  toast(TEXT.dialog.pinCleared);
 }
 
 function todayKey() {
@@ -708,7 +840,7 @@ function resetKidsStatsToday() {
   saveWatchedToday(defaultWatchedToday());
   renderKidsHome();
   renderKidsLog();
-  toast("     reset th   ng k   h  m nay.");
+  toast(TEXT.dialog.resetTodayDone);
 }
 
 function openDB() {
@@ -1263,7 +1395,7 @@ async function attachVideoSource(id, videoEl) {
   if (!objectUrl) {
     const blob = await getBlob(id);
     if (!blob) {
-      toast("Video blob không còn trong IndexedDB. Metadata vẫn còn nhưng file video đã mất.", 4200);
+      toast(TEXT.dialog.missingBlob, 4200);
       return;
     }
     objectUrl = URL.createObjectURL(blob);
@@ -1512,14 +1644,15 @@ async function toggleFavorite(id) {
 }
 
 
+
 async function editVideo(id) {
   const video = videos.find(item => item.id === id);
   if (!video) return;
-  const title = prompt("Đổi tên title trong app:", video.title);
+  const title = prompt(TEXT.dialog.editTitle, video.title);
   if (title === null) return;
-  const note = prompt("Note ngắn:", video.note || "");
+  const note = prompt(TEXT.dialog.shortNote, video.note || "");
   if (note === null) return;
-  const tags = prompt("Tags, ngăn cách bằng dấu phẩy:", video.tags.join(", "));
+  const tags = prompt(TEXT.dialog.tagsPrompt, video.tags.join(", "));
   if (tags === null) return;
   video.title = title.trim() || video.title;
   video.note = note.trim();
@@ -1528,7 +1661,6 @@ async function editVideo(id) {
   if (selectedDetailId === id) showVideoDetail(id);
   await refresh({ keepIndex: true });
 }
-
 
 function showVideoDetail(id) {
   const video = videos.find(item => item.id === id);
@@ -1582,19 +1714,20 @@ function kidsTimeLabel(value) {
 }
 
 
+
 async function editKidsSafe(id) {
   const video = videos.find(item => item.id === id);
   if (!video) return;
-  video.approvedForKids = confirm(video.approvedForKids ? "Video đang cho con xem. Bấm OK để giữ duyệt, Cancel để bỏ duyệt." : "Cho con xem video này?");
-  const category = prompt("Kids category (family, music, learning hoặc để trống):", video.kidsCategory || "");
+  video.approvedForKids = confirm(video.approvedForKids ? TEXT.dialog.keepKidsApproval : TEXT.dialog.allowKidsVideo);
+  const category = prompt(TEXT.dialog.kidsCategoryPrompt, video.kidsCategory || "");
   if (category === null) return;
-  const energy = prompt("Năng lượng: calm, normal, active", video.kidsEnergy || "normal");
+  const energy = prompt(TEXT.dialog.kidsEnergyPrompt, video.kidsEnergy || "normal");
   if (energy === null) return;
-  const allowedTime = prompt("Thời điểm: anytime, daytime, notBeforeSleep", video.kidsAllowedTime || "anytime");
+  const allowedTime = prompt(TEXT.dialog.kidsTimePrompt, video.kidsAllowedTime || "anytime");
   if (allowedTime === null) return;
-  const question = prompt("Câu hỏi sau video cho con:", video.kidsQuestion || "");
+  const question = prompt(TEXT.dialog.kidsQuestionPrompt, video.kidsQuestion || "");
   if (question === null) return;
-  const note = prompt("Ghi chú ngắn cho Ba/Mẹ:", video.kidsNote || "");
+  const note = prompt(TEXT.dialog.parentNotePrompt, video.kidsNote || "");
   if (note === null) return;
   video.kidsCategory = category.trim();
   video.kidsEnergy = ["calm", "normal", "active"].includes(energy.trim()) ? energy.trim() : "normal";
@@ -1606,26 +1739,27 @@ async function editKidsSafe(id) {
   await refresh({ keepIndex: true });
 }
 
+
 async function editFamilyMemory(id) {
   const video = videos.find(item => item.id === id);
   if (!video) return;
-  const familyType = prompt("Family type: family, child-memory, learning, music, movement, bedtime, reward, other", video.familyType || "");
+  const familyType = prompt(TEXT.dialog.familyTypePrompt, video.familyType || "");
   if (familyType === null) return;
-  const memoryDate = prompt("Memory date (YYYY-MM-DD):", video.memoryDate || "");
+  const memoryDate = prompt(TEXT.dialog.memoryDatePrompt, video.memoryDate || "");
   if (memoryDate === null) return;
   const birthDate = localStorage.getItem(CHILD_BIRTH_DATE_KEY) || "";
   const suggestedAge = ageLabelFromDates(memoryDate.trim(), birthDate) || video.childAgeLabel || "";
-  const childAgeLabel = prompt("Child age label:", suggestedAge);
+  const childAgeLabel = prompt(TEXT.dialog.childAgePrompt, suggestedAge);
   if (childAgeLabel === null) return;
-  const people = prompt("People, comma separated:", video.familyPeople.join(", "));
+  const people = prompt(TEXT.dialog.peoplePrompt, video.familyPeople.join(", "));
   if (people === null) return;
-  const location = prompt("Location:", video.familyLocation || "");
+  const location = prompt(TEXT.dialog.locationPrompt, video.familyLocation || "");
   if (location === null) return;
-  const note = prompt("Memory note:", video.memoryNote || "");
+  const note = prompt(TEXT.dialog.memoryNotePrompt, video.memoryNote || "");
   if (note === null) return;
-  const question = prompt("Memory question after video:", video.memoryQuestion || "");
+  const question = prompt(TEXT.dialog.memoryQuestionPrompt, video.memoryQuestion || "");
   if (question === null) return;
-  const ref = prompt("KHOBAUKYUC ref text/link/id:", video.khoBauKyUcRef || "");
+  const ref = prompt(TEXT.dialog.khoBauRefPrompt, video.khoBauKyUcRef || "");
   if (ref === null) return;
   video.familyType = ["family", "child-memory", "learning", "music", "movement", "bedtime", "reward", "other"].includes(familyType.trim()) ? familyType.trim() : "";
   video.memoryDate = memoryDate.trim();
@@ -1663,34 +1797,30 @@ function playDetailVideo() {
   }
 }
 
+
 async function removeVideo(id) {
-  if (!confirm("X  a video n  y kh   i b    nh    offline?")) return false;
+  if (!confirm(TEXT.dialog.deleteVideoConfirm)) return false;
   const videoEl = videoElements.get(id);
   if (videoEl) detachVideoSource(id, videoEl);
   await deleteVideo(id);
   playlists = playlists.map(playlist => ({ ...playlist, videoIds: playlist.videoIds.filter(videoId => videoId !== id) }));
   savePlaylists();
   await refresh();
-  toast("     x  a video.");
+  toast(TEXT.dialog.videoDeleted);
   return true;
 }
 
 async function addFiles(files, inputEl) {
   const selected = Array.from(files || []).filter(file => file.type.startsWith("video/"));
   if (!selected.length) {
-    toast("Kh  ng t  m th   y video.");
+    toast(TEXT.dialog.noVideoFound);
     if (inputEl) inputEl.value = "";
     return;
   }
 
   const totalBytes = selected.reduce((sum, file) => sum + file.size, 0);
   const largest = selected.reduce((max, file) => Math.max(max, file.size), 0);
-  let warning = `Chu   n b    l  u ${selected.length} video, t   ng ${fmt(totalBytes)}, file l   n nh   t ${fmt(largest)}.`;
-  if (largest > LARGE_FILE_BYTES) warning += "\nC   video tr  n 200MB, l  u tr  n   i   n tho   i y   u c   th    r   t ch   m.";
-  if (totalBytes > LARGE_IMPORT_BYTES) warning += "\nT   ng import tr  n 1GB, quota tr  nh duy   t c   th    kh  ng      .";
-  if (lowEndMode && largest > LOW_END_FILE_BYTES) warning += "\nCh          m  y y   u khuy   n ngh    m   i video <= 150MB.";
-  warning += "\nB   n mu   n ti   p t   c?";
-  if (!confirm(warning)) {
+  if (!confirm(buildImportPreflightMessage(selected, totalBytes, largest))) {
     if (inputEl) inputEl.value = "";
     return;
   }
@@ -1719,7 +1849,7 @@ async function addFiles(files, inputEl) {
             skipped++;
             continue;
           }
-          const choice = prompt(`Video "${file.name}" c   v         t   n t   i.\nNh   p: skip, save, all`, "skip");
+          const choice = prompt(`${TEXT.dialog.duplicateVideo}\n${TEXT.dialog.duplicateChoice}`, "skip");
           const normalizedChoice = String(choice || "skip").trim().toLowerCase();
           if (normalizedChoice === "skip") {
             skipped++;
@@ -1746,14 +1876,15 @@ async function addFiles(files, inputEl) {
 
   showImportProgress(false);
   await refresh();
-  toast(`Import xong: lưu ${saved}, bỏ qua ${skipped}, lỗi ${failed}.`, failed ? 4200 : 3000);
+  toast(`${TEXT.dialog.importDone}: ${TEXT.dialog.saved} ${saved}, ${TEXT.dialog.skipped} ${skipped}, ${TEXT.dialog.error} ${failed}.`, failed ? 4200 : 3000);
 }
 
+
 function friendlyImportError(error) {
-  if (isQuotaExceeded(error)) return "Bộ nhớ trình duyệt không đủ.";
-  if (error?.name === "NotReadableError") return "Không đọc được file.";
-  if (error?.name === "AbortError") return "Import bị hủy.";
-  return "Lỗi IndexedDB hoặc trình duyệt.";
+  if (isQuotaExceeded(error)) return TEXT.dialog.quotaNotEnough;
+  if (error?.name === "NotReadableError") return TEXT.dialog.unreadableFile;
+  if (error?.name === "AbortError") return TEXT.dialog.importCancelled;
+  return TEXT.dialog.indexedDbError;
 }
 
 function showImportProgress(show) {
@@ -1761,9 +1892,10 @@ function showImportProgress(show) {
   importBar.style.width = "0%";
 }
 
+
 function updateImportProgress(index, total, file, savedBytes) {
   const current = Math.min(total, index + 1);
-  importStatus.textContent = `Đang lưu video ${current}/${total}: ${file.name} • ${fmt(file.size)} • đã lưu ${fmt(savedBytes)}`;
+  importStatus.textContent = `${TEXT.dialog.savingVideo} ${current}/${total}: ${file.name} • ${fmt(file.size)} • ${TEXT.dialog.savedBytes} ${fmt(savedBytes)}`;
   importBar.style.width = total ? `${index / total * 100}%` : "0%";
 }
 
@@ -1781,7 +1913,7 @@ async function updateStorage() {
   const level = percent === null ? TEXT.unknown : percent < 50 ? TEXT.safe : percent <= 80 ? TEXT.watch : TEXT.danger;
   const orphans = db ? await findOrphanMetadata(videos).catch(() => []) : [];
   const warning = orphans.length
-    ? `${orphans.length} metadata video thiếu blob. Đây là video offline bị lỗi và có thể dọn.`
+    ? `${orphans.length} ${TEXT.dialog.orphanWarning}`
     : buildStorageWarning(estimate, persisted, percent);
 
   storageInfo.textContent = `${videos.length} video - offline ${fmt(total)}`;
@@ -1819,24 +1951,25 @@ async function isStoragePersisted() {
 }
 
 
+
 function buildStorageWarning(estimate, persisted, percent) {
   const base = TEXT.storageBackupWarning;
   if (!navigator.storage) return TEXT.browserNoStorageApi + " " + base;
-  if (!estimate) return "Không đọc được usage/quota. " + base;
-  if (percent > 80) return "Dung lượng đang ở mức nguy hiểm trên 80% quota. " + base;
-  if (percent >= 50) return "Dung lượng đã qua 50% quota, nên dọn bớt video lớn. " + base;
-  if (persisted !== true) return "Persistent storage chưa được bảo vệ. " + base;
+  if (!estimate) return TEXT.dialog.storageUnknown + " " + base;
+  if (percent > 80) return TEXT.dialog.storageDanger + " " + base;
+  if (percent >= 50) return TEXT.dialog.storageWarn + " " + base;
+  if (persisted !== true) return TEXT.dialog.persistentUnprotected + " " + base;
   return base;
 }
 
 
 async function requestPersistentStorage() {
   if (!navigator.storage?.persist) {
-    toast("Trình duyệt không hỗ trợ persistent storage.");
+    toast(TEXT.dialog.noStoragePersist);
     return;
   }
   const ok = await navigator.storage.persist().catch(() => false);
-  toast(ok ? "Đã yêu cầu bảo vệ bộ nhớ." : "Trình duyệt chưa cấp bảo vệ bộ nhớ.", 3600);
+  toast(ok ? TEXT.dialog.persistAccepted : TEXT.dialog.persistDenied, 3600);
   updateStorage();
 }
 
@@ -1868,8 +2001,9 @@ function updatePlaylistFilter() {
 }
 
 
+
 function createPlaylist() {
-  const name = prompt("Tên playlist mới:");
+  const name = prompt(TEXT.dialog.newPlaylistName);
   if (!name?.trim()) return null;
   const playlist = { id: crypto.randomUUID(), name: name.trim(), videoIds: [], showInKids: false };
   playlists.push(playlist);
@@ -1882,13 +2016,14 @@ function selectedPlaylist() {
 }
 
 
+
 function renameSelectedPlaylist() {
   const playlist = selectedPlaylist();
   if (!playlist) {
-    toast("Hãy chọn một playlist trước.");
+    toast(TEXT.dialog.choosePlaylistFirst);
     return;
   }
-  const name = prompt("Đổi tên playlist:", playlist.name);
+  const name = prompt(TEXT.dialog.renamePlaylist, playlist.name);
   if (!name?.trim()) return;
   playlist.name = name.trim();
   savePlaylists();
@@ -1899,44 +2034,44 @@ function renameSelectedPlaylist() {
 function deleteSelectedPlaylist() {
   const playlist = selectedPlaylist();
   if (!playlist) {
-    toast("Hãy chọn một playlist trước.");
+    toast(TEXT.dialog.choosePlaylistFirst);
     return;
   }
-  if (!confirm(`Xóa playlist "${playlist.name}"? Video sẽ không bị xóa.`)) return;
+  if (!confirm(`${TEXT.dialog.deletePlaylistQuestion} "${playlist.name}"? ${TEXT.dialog.playlistVideoKept}`)) return;
   playlists = playlists.filter(item => item.id !== playlist.id);
   playlistFilter.value = "all";
   savePlaylists();
   refresh({ keepIndex: true });
-  toast("Đã xóa playlist.");
+  toast(TEXT.dialog.playlistDeleted);
 }
 
 
 function toggleSelectedPlaylistKids() {
   const playlist = selectedPlaylist();
   if (!playlist) {
-    toast("Hãy chọn một playlist trước.");
+    toast(TEXT.dialog.choosePlaylistFirst);
     return;
   }
   playlist.showInKids = !playlist.showInKids;
   savePlaylists();
   renderKidsHome();
-  toast(playlist.showInKids ? "Playlist sẽ hiện trong Kids Mode." : "Playlist đã ẩn khỏi Kids Mode.");
+  toast(playlist.showInKids ? TEXT.dialog.playlistShownKids : TEXT.dialog.playlistHiddenKids);
 }
 
 
 function addVideoToPlaylist(videoId) {
   let playlist = selectedPlaylist() || playlists[0];
   if (playlist?.videoIds.includes(videoId)) {
-    if (confirm(`Bỏ video khỏi playlist "${playlist.name}"?`)) {
+    if (confirm(`${TEXT.dialog.removeFromPlaylist} "${playlist.name}"?`)) {
       playlist.videoIds = playlist.videoIds.filter(id => id !== videoId);
       savePlaylists();
       if (selectedDetailId === videoId) showVideoDetail(videoId);
       refresh({ keepIndex: true });
-      toast("Đã bỏ khỏi playlist.");
+      toast(TEXT.dialog.removedFromPlaylist);
     }
     return;
   }
-  if (!playlist || !confirm(`Thêm vào playlist "${playlist.name}"? Bấm Cancel để tạo playlist mới.`)) {
+  if (!playlist || !confirm(`${TEXT.dialog.addToPlaylist} "${playlist.name}"? ${TEXT.dialog.cancelToCreatePlaylist}`)) {
     playlist = createPlaylist();
   }
   if (!playlist) return;
@@ -1944,9 +2079,8 @@ function addVideoToPlaylist(videoId) {
   savePlaylists();
   if (selectedDetailId === videoId) showVideoDetail(videoId);
   refresh({ keepIndex: true });
-  toast("Đã thêm vào playlist.");
+  toast(TEXT.dialog.addedToPlaylist);
 }
-
 
 function renderKidsHome() {
   kidsHome.hidden = !isKidsMode();
@@ -2136,7 +2270,7 @@ function exportMetadata() {
   a.download = `vinhvideo-metadata-backup-${timestampName()}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast("Đã export metadata. File JSON không chứa video thật.");
+  toast(TEXT.dialog.exportMetadataDone);
 }
 
 function timestampName() {
@@ -2209,7 +2343,7 @@ async function importMetadataFile(file) {
   }
   metadataInput.value = "";
   await refresh();
-  toast(`Import metadata: merge ${merged}, bỏ qua ${skipped} mục thiếu video blob.`, 4600);
+  toast(`${TEXT.dialog.importStatusPrefix}: merge ${merged}, ${TEXT.dialog.skipped} ${skipped} ${TEXT.dialog.missingBlobItems}.`, 4600);
 }
 
 function openDrawer() {
@@ -2237,20 +2371,20 @@ drawer.addEventListener("click", event => {
 });
 fileInput.onchange = event => addFiles(event.target.files, event.target);
 folderInput.onchange = event => addFiles(event.target.files, event.target);
-metadataInput.onchange = event => importMetadataFile(event.target.files?.[0]).catch(() => toast("File metadata không hợp lệ.", 3600));
+metadataInput.onchange = event => importMetadataFile(event.target.files?.[0]).catch(() => toast(TEXT.dialog.invalidMetadata, 3600));
 persistBtn.onclick = requestPersistentStorage;
 repairBtn.onclick = async () => {
-  if (!confirm("Dọn metadata video lỗi không có blob?")) return;
+  if (!confirm(`${TEXT.dialog.repairBrokenTitle}\n${TEXT.dialog.repairBrokenBody}`)) return;
   const result = await repairLibrary({ removeOrphans: true }).catch(error => ({ error }));
   if (result.error) {
-    toast("Dọn video lỗi thất bại.", 3600);
+    toast(TEXT.dialog.repairFailed, 3600);
     return;
   }
-  toast(`Dọn xong: đã xóa ${result.removed} video lỗi.`, 3600);
+  toast(`${TEXT.dialog.repairedBroken} (${result.removed})`, 3600);
 };
 cancelImportBtn.onclick = () => {
   cancelImport = true;
-  toast("Sẽ hủy sau file hiện tại.");
+  toast(TEXT.dialog.cancelAfterCurrent);
 };
 lowEndToggle.onchange = () => {
   lowEndMode = lowEndToggle.checked;
@@ -2276,15 +2410,17 @@ $("renamePlaylistBtn").onclick = renameSelectedPlaylist;
 $("toggleKidsPlaylistBtn").onclick = toggleSelectedPlaylistKids;
 $("deletePlaylistBtn").onclick = deleteSelectedPlaylist;
 $("exportBtn").onclick = exportMetadata;
+
 $("clearBtn").onclick = async () => {
-  if (!confirm("X  a to  n b    video offline? Metadata v   video blob s    b    x  a kh   i IndexedDB.")) return;
+  if (!confirm(`${TEXT.dialog.clearAllConfirmTitle}\n${TEXT.dialog.clearAllConfirmBody}`)) return;
   for (const [id, videoEl] of videoElements) detachVideoSource(id, videoEl);
   await clearLibrary();
   playlists = [];
   savePlaylists();
   await refresh();
-  toast("     x  a th   vi   n.");
+  toast(TEXT.dialog.libraryCleared);
 };
+
 searchInput.oninput = () => refresh({ keepIndex: true });
 sortSelect.onchange = () => refresh({ keepIndex: true });
 statusFilter.onchange = () => refresh({ keepIndex: true });
@@ -2331,7 +2467,7 @@ breakToggle.onchange = saveKidsSettingsFromUI;
 breakEveryInput.onchange = saveKidsSettingsFromUI;
 resetKidsStatsBtn.onclick = resetKidsStatsToday;
 clearKidsLogBtn.onclick = () => {
-  if (!confirm("Xóa lịch sử xem local của con?")) return;
+  if (!confirm(TEXT.dialog.clearKidsLogConfirm)) return;
   saveKidsLog([]);
   renderKidsLog();
 };
@@ -2352,8 +2488,8 @@ kidsStopBtn.onclick = () => {
   kidsHome.hidden = false;
   document.querySelectorAll("video").forEach(video => video.pause());
 };
-window.addEventListener("online", () => toast("Đã có internet."));
-window.addEventListener("offline", () => toast("Đang ở chế độ offline."));
+window.addEventListener("online", () => toast(TEXT.dialog.online));
+window.addEventListener("offline", () => toast(TEXT.dialog.offline));
 
 saveRoutineBtn.onclick = saveRoutineSettingsFromUI;
 saveChildProfileBtn.onclick = saveChildProfile;
@@ -2364,14 +2500,15 @@ window.offlineCinemaDebug = {
   appVersion: APP_VERSION,
   scanBadText,
   scanVisibleText,
+  scanDialogText,
   repairTextMetadata: async (options = {}) => { const result = await repairTextMetadata({ force: true, ...options }); await refresh(); return result; },
   findOrphans: () => findOrphanMetadata(videos),
-  repairOrphans: async () => { if (!confirm("Dọn metadata video lỗi không có blob?")) return { cancelled: true }; return repairLibrary({ removeOrphans: true }); },
+  repairOrphans: async () => { if (!confirm(`${TEXT.dialog.repairBrokenTitle}\n${TEXT.dialog.repairBrokenBody}`)) return { cancelled: true }; return repairLibrary({ removeOrphans: true }); },
   countMetadata,
   countBlobs
 };
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.9.4").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.9.5").catch(() => {}));
 }
 
 (async () => {
@@ -2387,6 +2524,6 @@ if ("serviceWorker" in navigator) {
     syncRoutineUI();
     await refresh();
   } catch (error) {
-    toast("Không mở được thư viện IndexedDB trên trình duyệt này.", 4200);
+    toast(TEXT.dialog.dbOpenFailed, 4200);
   }
 })();
