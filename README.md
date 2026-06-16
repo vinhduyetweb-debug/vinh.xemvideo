@@ -145,3 +145,9 @@ vercel --prod
 - Optional manual cover image per video without auto thumbnail generation.
 - More robust manual QA scripts for IndexedDB migration and kids settings.
 - Better accessibility labels and keyboard controls.
+
+
+## V1.9.4 Stability Hotfix
+- Repairs Vietnamese encoding in static UI and runtime strings.
+- Repairs old IndexedDB metadata text without touching valid video blobs.
+- Keeps orphan video repair helpers for metadata records that lost their blob.

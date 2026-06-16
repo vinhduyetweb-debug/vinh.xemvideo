@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.9.4";
 const DB_NAME = "vinhvideo_offline_db_v1";
 const DB_VERSION = 2;
 const STORE = "videos";
@@ -16,9 +16,82 @@ const KIDS_LAST_WATCH_DATE_KEY = "offlineCinema.kidsLastWatchDate";
 const BREAK_ENABLED_KEY = "offlineCinema.kidsBreakEnabled";
 const BREAK_EVERY_KEY = "offlineCinema.kidsBreakEvery";
 const KIDS_WATCH_LOG_KEY = "offlineCinema.kidsWatchLog";
+const ROUTINE_ENABLED_KEY = "offlineCinema.routine.enabled";
+const ROUTINE_MORNING_KEY = "offlineCinema.routine.allowedMorning";
+const ROUTINE_AFTERNOON_KEY = "offlineCinema.routine.allowedAfternoon";
+const ROUTINE_EVENING_KEY = "offlineCinema.routine.allowedEvening";
+const ROUTINE_NO_WATCH_AFTER_KEY = "offlineCinema.routine.noWatchAfter";
+const ROUTINE_NO_BEFORE_SLEEP_KEY = "offlineCinema.routine.noBeforeSleepEnabled";
+const ROUTINE_WEEKEND_EXTRA_KEY = "offlineCinema.routine.weekendExtraMinutes";
+const CHILD_NAME_KEY = "offlineCinema.childName";
+const CHILD_BIRTH_DATE_KEY = "offlineCinema.childBirthDate";
 const LARGE_FILE_BYTES = 200 * 1024 * 1024;
 const LOW_END_FILE_BYTES = 150 * 1024 * 1024;
 const LARGE_IMPORT_BYTES = 1024 * 1024 * 1024;
+
+const TEXT = {
+  phoneSource: "Điện thoại",
+  watched: "Đã xem",
+  watching: "Đang xem dở",
+  unseen: "Chưa xem",
+  none: "Chưa có",
+  noDate: "Chưa có ngày",
+  noAge: "Chưa có mốc tuổi",
+  personalVideoSubtitle: "Kho video cá nhân offline, tối ưu cho điện thoại yếu.",
+  totalVideos: "Tổng video",
+  storageSize: "Dung lượng",
+  favorites: "Yêu thích",
+  recent: "Xem gần đây",
+  continueWatching: "Tiếp tục xem",
+  addVideo: "Thêm video",
+  openLibrary: "Mở thư viện",
+  repairBrokenVideos: "Dọn video lỗi",
+  details: "Chi tiết",
+  edit: "Sửa",
+  delete: "Xóa",
+  allPlaylists: "Mọi playlist",
+  all: "Tất cả",
+  largeVideo: "Video lớn",
+  familyMemory: "Ký ức gia đình",
+  family: "Gia đình",
+  childMemory: "Ký ức của con",
+  cinema: "Rạp chiếu",
+  cinemaClosed: "Rạp chiếu đang nghỉ.",
+  childNameDefault: "Mỹ Anh",
+  learning: "Học nhẹ",
+  movement: "Vận động",
+  bedtime: "Trước giờ ngủ",
+  reward: "Video thưởng",
+  bullet: " • ",
+  storageBackupWarning: "IndexedDB không phải backup vĩnh viễn. Hãy giữ video gốc ở máy/ổ cứng/cloud.",
+  browserNoStorageApi: "Trình duyệt không hỗ trợ Storage API.",
+  unknown: "Không rõ",
+  notSupported: "Không hỗ trợ",
+  protectedStorage: "Đã được bảo vệ",
+  unprotectedStorage: "Chưa được bảo vệ",
+  safe: "An toàn",
+  watch: "Cần chú ý",
+  danger: "Nguy hiểm",
+  parentDashboard: "Dashboard của Ba/Mẹ",
+  minutesToday: "Phút hôm nay",
+  videosWatched: "Video đã xem",
+  videosCompleted: "Video hoàn thành",
+  breakCount: "Lần nghỉ mắt",
+  remaining: "Còn lại",
+  allowed: "Được xem",
+  blocked: "Đang chặn",
+  lastSevenDays: "7 ngày gần đây",
+  content: "Nội dung",
+  topVideo: "Video xem nhiều nhất",
+  topPlaylist: "Playlist xem nhiều nhất",
+  recentItems: "Gần đây",
+  routineStatus: "Trạng thái routine",
+  contentBalance: "Cân bằng nội dung",
+  noFamilyMetadata: "Chưa có metadata ký ức gia đình.",
+  exportWarning: "Export metadata không chứa file video thật. Import metadata không khôi phục video nếu blob đã mất khỏi IndexedDB."
+};
+const TEXT_REPAIR_VERSION = "1.9.4";
+
 
 const $ = id => document.getElementById(id);
 const appRoot = $("appRoot");
@@ -39,6 +112,7 @@ const healthLevel = $("healthLevel");
 const healthPersist = $("healthPersist");
 const healthWarning = $("healthWarning");
 const persistBtn = $("persistBtn");
+const repairBtn = $("repairBtn");
 const lowEndToggle = $("lowEndToggle");
 const searchInput = $("searchInput");
 const sortSelect = $("sortSelect");
@@ -60,6 +134,7 @@ const detailBody = $("detailBody");
 const detailPlayBtn = $("detailPlayBtn");
 const detailEditBtn = $("detailEditBtn");
 const detailKidsBtn = $("detailKidsBtn");
+const detailFamilyBtn = $("detailFamilyBtn");
 const detailPlaylistBtn = $("detailPlaylistBtn");
 const detailDeleteBtn = $("detailDeleteBtn");
 const kidsParentBtn = $("kidsParentBtn");
@@ -89,6 +164,22 @@ const resetKidsStatsBtn = $("resetKidsStatsBtn");
 const kidsLogSummary = $("kidsLogSummary");
 const kidsLogList = $("kidsLogList");
 const clearKidsLogBtn = $("clearKidsLogBtn");
+const parentDashboard = $("parentDashboard");
+const dailySummary = $("dailySummary");
+const routineEnabledToggle = $("routineEnabledToggle");
+const routineMorningToggle = $("routineMorningToggle");
+const routineAfternoonToggle = $("routineAfternoonToggle");
+const routineEveningToggle = $("routineEveningToggle");
+const noWatchAfterInput = $("noWatchAfterInput");
+const noBeforeSleepToggle = $("noBeforeSleepToggle");
+const weekendExtraSelect = $("weekendExtraSelect");
+const saveRoutineBtn = $("saveRoutineBtn");
+const childNameInput = $("childNameInput");
+const childBirthDateInput = $("childBirthDateInput");
+const saveChildProfileBtn = $("saveChildProfileBtn");
+const familyFilter = $("familyFilter");
+const familySort = $("familySort");
+const familyCinemaList = $("familyCinemaList");
 
 let db = null;
 let videos = [];
@@ -107,6 +198,187 @@ let breakTimer = null;
 const objectUrls = new Map();
 const videoElements = new Map();
 const positionTimers = new Map();
+
+
+function repairSourceText(value) {
+  if (typeof value !== "string") return value;
+  const cleaned = value.replace(/\u0000/g, "").trim();
+  const compact = cleaned.replace(/\s+/g, " ");
+  const variants = new Set([
+    TEXT.phoneSource,
+    "Dien thoai",
+    "i n tho i",
+    "\u00c4\u0090i\u00e1\u00bb\u2021n tho\u00e1\u00ba\u00a1i",
+    "\u00c4\u0090i\u00e1\u00bb\u0087n tho\u00e1\u00ba\u00a1i",
+    "\u00c3\u201e\u00c2\u0090i\u00c3\u00a1\u00c2\u00bb\u00e2\u20ac\u00a1n tho\u00c3\u00a1\u00c2\u00ba\u00c2\u00a1i"
+  ]);
+  if (variants.has(compact)) return TEXT.phoneSource;
+  return value;
+}
+
+function repairVietnameseText(value) {
+  if (typeof value !== "string") return value;
+  const sourceFixed = repairSourceText(value);
+  if (sourceFixed === TEXT.phoneSource) return sourceFixed;
+  const replacements = [
+    ["\u00c3\u201e\u00c2\u0090i\u00c3\u00a1\u00c2\u00bb\u00e2\u20ac\u00a1n tho\u00c3\u00a1\u00c2\u00ba\u00c2\u00a1i", TEXT.phoneSource],
+    ["\u00c3\u201e\u00c2\u0090\u00c3\u0192\u00c2\u00a3 xem", TEXT.watched],
+    ["Ch\u00c3\u2020\u00c2\u00b0a xem", TEXT.unseen],
+    ["\u00c3\u201e\u00c2\u0090ang xem d\u00c3\u00a1\u00c2\u00bb\u00c5\u00b8", TEXT.watching],
+    ["K\u00c3\u0192\u00c2\u00bd \u00c3\u00a1\u00c2\u00bb\u00c2\u00a9c", "K\u00fd \u1ee9c"],
+    ["Gia \u00c3\u201e\u00e2\u20ac\u02dc\u00c3\u0192\u00c2\u00acnh", TEXT.family],
+    ["M\u00c3\u00a1\u00c2\u00bb\u00c2\u00b9 Anh", TEXT.childNameDefault],
+    ["\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2", TEXT.bullet.trim()],
+    ["Dien thoai", TEXT.phoneSource], ["Da xem", TEXT.watched], ["Chua xem", TEXT.unseen],
+    ["Dang xem do", TEXT.watching], ["Rap chieu", TEXT.cinema], ["Ky uc", "K\u00fd \u1ee9c"],
+    ["Gia dinh", TEXT.family], ["My Anh", TEXT.childNameDefault], ["Hoc nhe", TEXT.learning],
+    ["Van dong", TEXT.movement], ["Truoc gio ngu", TEXT.bedtime], ["Video thuong", TEXT.reward],
+    ["Kho video c nh n offline, t i u cho i n tho i y u.", TEXT.personalVideoSubtitle],
+    ["T ng video", TEXT.totalVideos], ["Dung l ng", TEXT.storageSize], ["Y u th ch", TEXT.favorites],
+    ["Xem g n y", TEXT.recent], ["Ti p t c xem", TEXT.continueWatching], ["Th m video", TEXT.addVideo],
+    ["M th vi n", TEXT.openLibrary], ["Don video loi", TEXT.repairBrokenVideos], ["Chi tiet", TEXT.details],
+    ["chua co ngay", TEXT.noDate], ["chua co moc tuoi", TEXT.noAge], ["Chua co", TEXT.none], ["chua co", TEXT.none]
+  ];
+  return replacements.reduce((text, pair) => text.split(pair[0]).join(pair[1]), value);
+}
+function repairTextFields(record) {
+  const next = { ...record };
+  const fields = ["title","source","note","kidsCategory","kidsQuestion","kidsNote","familyType","familyLocation","memoryNote","memoryQuestion","childAgeLabel","khoBauKyUcRef"];
+  for (const field of fields) next[field] = repairVietnameseText(next[field]);
+  next.source = repairVietnameseText(next.source || TEXT.phoneSource) || TEXT.phoneSource;
+  if (Array.isArray(next.tags)) next.tags = next.tags.map(repairVietnameseText);
+  if (Array.isArray(next.familyPeople)) next.familyPeople = next.familyPeople.map(repairVietnameseText);
+  return next;
+}
+function metadataTextFields(record) {
+  return { title: record.title, source: record.source, note: record.note, tags: record.tags, kidsCategory: record.kidsCategory, kidsQuestion: record.kidsQuestion, kidsNote: record.kidsNote, familyType: record.familyType, familyPeople: record.familyPeople, familyLocation: record.familyLocation, memoryNote: record.memoryNote, memoryQuestion: record.memoryQuestion, childAgeLabel: record.childAgeLabel, khoBauKyUcRef: record.khoBauKyUcRef };
+}
+function textFieldsChanged(before, after) { return JSON.stringify(metadataTextFields(before)) !== JSON.stringify(metadataTextFields(after)); }
+async function repairTextMetadata({ force = false } = {}) {
+  const result = { scanned: 0, repaired: 0, changedFields: [] };
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE, "readwrite");
+    const videoStore = transaction.objectStore(STORE);
+    const request = videoStore.openCursor();
+    request.onsuccess = event => {
+      const cursor = event.target.result;
+      if (!cursor) return;
+      const original = normalizeMetadata(cursor.value || {});
+      const repaired = normalizeMetadata(repairTextFields({ ...original, source: repairVietnameseText(original.source || TEXT.phoneSource) || TEXT.phoneSource }));
+      result.scanned += 1;
+      if (force || textFieldsChanged(original, repaired)) {
+        const changed = Object.keys(metadataTextFields(original)).filter(field => JSON.stringify(original[field]) !== JSON.stringify(repaired[field]));
+        changed.forEach(field => { if (!result.changedFields.includes(field)) result.changedFields.push(field); });
+        cursor.update({ ...cursor.value, ...repaired, id: original.id, fileName: original.fileName, fingerprint: original.fingerprint, type: original.type, size: original.size, createdAt: original.createdAt, updatedAt: original.updatedAt, order: original.order });
+        result.repaired += 1;
+      }
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+  localStorage.setItem("offlineCinema.textRepairVersion", TEXT_REPAIR_VERSION);
+  return result;
+}
+function scanBadTextInMetadata(rows = videos) {
+  const badPatterns = ["\u00c3\u0192","\u00c3\u201a","\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2","\u00c3\u201e","\u00c3\u00a1\u00c2\u00ba","\u00c3\u00a1\u00c2\u00bb"," c nh n "," t i u "," i n tho i ","i n tho i","\u00c4\u0090i\u00e1\u00bb\u2021n tho\u00e1\u00ba\u00a1i","\u00c4\u0090i\u00e1\u00bb\u0087n tho\u00e1\u00ba\u00a1i","T ng video","Dung l ng","Y u th ch"];
+  const fields = ["title","source","note","kidsCategory","kidsQuestion","kidsNote","familyType","familyLocation","memoryNote","memoryQuestion","childAgeLabel","khoBauKyUcRef"];
+  const issues = [];
+  for (const video of rows) {
+    for (const field of fields) {
+      const value = video[field];
+      if (typeof value === "string" && badPatterns.some(pattern => value.includes(pattern))) issues.push({ id: video.id, field, value, title: video.title });
+    }
+    for (const field of ["tags", "familyPeople"]) {
+      const values = Array.isArray(video[field]) ? video[field] : [];
+      values.forEach(value => { if (typeof value === "string" && badPatterns.some(pattern => value.includes(pattern))) issues.push({ id: video.id, field, value, title: video.title }); });
+    }
+  }
+  return issues;
+}
+
+function getVisibleTextBadPatterns() {
+  return [
+    "\u00c3", "\u00c4", "\u00e2\u20ac\u00a2", "\u00e1\u00ba", "\u00e1\u00bb",
+    "Chi ti t", "S a", "kh ng", "Chua co", "Phut hom nay", "Video da xem", "Lan nghi mat",
+    "Ngay ky uc", "tr nh duy t", "v nh vi n", "T  m", "Dashboard cua", "Nep xem", "Ho so",
+    "Tom tat", "Hom nay", "Gia dinh/ky uc", "M   i playlist"
+  ];
+}
+
+function scanVisibleText() {
+  const text = document.body?.innerText || "";
+  return getVisibleTextBadPatterns().filter(pattern => text.includes(pattern));
+}
+
+function encodingHealthCheck() {
+  const text = document.body?.innerText || "";
+  const patterns = ["\u00c3\u0192","\u00c3\u201a","\u00c3\u00a2\u00e2\u201a\u00ac\u00c2\u00a2","\u00c3\u201e"," c nh n "," t i u "," i n tho i ","T ng video","Dung l ng","Y u th ch"];
+  const found = patterns.filter(pattern => text.includes(pattern));
+  const visible = scanVisibleText();
+  if (found.length || visible.length) console.warn("Offline Cinema encoding health warning", { found, visible });
+  return [...new Set([...found, ...visible])];
+}
+
+function scanBadText() { return { metadata: scanBadTextInMetadata(), document: encodingHealthCheck(), visible: scanVisibleText() }; }
+
+async function countMetadata() { return (await getAllMetadata()).length; }
+async function countBlobs() { return (await getBlobIds()).length; }
+
+function applyStaticText() {
+  const set = (id, value) => { const el = $(id); if (el) el.textContent = value; };
+  const setHtml = (selector, value) => { const el = document.querySelector(selector); if (el) el.innerHTML = value; };
+  const setPlaceholder = (id, value) => { const el = $(id); if (el) el.placeholder = value; };
+  const heroEyebrow = document.querySelector(".homeHero .eyebrow");
+  if (heroEyebrow) heroEyebrow.textContent = "VinhVideo Offline Cinema - v" + APP_VERSION;
+  const heroCopy = document.querySelector(".homeHero p:not(.eyebrow)");
+  if (heroCopy) heroCopy.textContent = TEXT.personalVideoSubtitle;
+  const stats = document.querySelectorAll(".heroStats span");
+  if (stats[0]) stats[0].textContent = TEXT.totalVideos;
+  if (stats[1]) stats[1].textContent = TEXT.storageSize;
+  if (stats[2]) stats[2].textContent = TEXT.favorites;
+  if (stats[3]) stats[3].textContent = TEXT.recent;
+  set("continueBtn", TEXT.continueWatching);
+  set("heroAddBtn", TEXT.addVideo);
+  set("heroLibraryBtn", TEXT.openLibrary);
+  set("repairBtn", TEXT.repairBrokenVideos);
+  set("emptyAddBtn", "Thêm video đầu tiên");
+  set("kidsParentBtn", "Chế độ của Ba");
+  set("kidsStartBtn", "Bắt đầu xem");
+  set("kidsContinueBtn", "Xem tiếp");
+  set("kidsRestBtn", "Nghỉ mắt chút");
+  set("kidsGateTitle", "Con vừa xem xong rồi.");
+  set("kidsNextBtn", "Xem tiếp");
+  set("kidsStopBtn", "Nghỉ mắt chút");
+  set("enterKidsBtn", "Chế độ của Con");
+  set("setPinBtn", "Đặt/đổi PIN 4 số");
+  set("clearPinBtn", "Xóa PIN");
+  set("resetKidsStatsBtn", "Reset hôm nay");
+  set("clearKidsLogBtn", "Xóa lịch sử local");
+  set("saveRoutineBtn", "Lưu routine");
+  set("saveChildProfileBtn", "Lưu hồ sơ");
+  set("detailPlayBtn", "Phát video này");
+  set("detailEditBtn", "Sửa metadata");
+  set("detailFamilyBtn", "Ký ức gia đình");
+  set("detailDeleteBtn", TEXT.delete);
+  set("importStatus", "Chuẩn bị...");
+  set("cancelImportBtn", "Hủy import");
+  setPlaceholder("searchInput", "Tìm title, file, note, tag...");
+  const emptyP = document.querySelector("#empty p:not(.eyebrow)");
+  if (emptyP) emptyP.textContent = "Kho video cá nhân để xem khi không có mạng.";
+  document.querySelectorAll("#filterChips .chip").forEach(button => {
+    if (button.dataset.filter === "all") button.textContent = TEXT.all;
+    if (button.dataset.filter === "fav") button.textContent = TEXT.favorites;
+    if (button.dataset.filter === "seen") button.textContent = TEXT.watched;
+    if (button.dataset.filter === "unseen") button.textContent = TEXT.unseen;
+    if (button.dataset.filter === "large") button.textContent = TEXT.largeVideo;
+  });
+  setHtml(".aboutBox p:nth-of-type(1)", "<strong>Offline Cinema</strong> by VinhVideo - v" + APP_VERSION);
+  const aboutCopy = document.querySelector(".aboutBox p:nth-of-type(3)");
+  if (aboutCopy) aboutCopy.textContent = "Video nằm trong IndexedDB của trình duyệt và không phải backup vĩnh viễn.";
+}
 
 function getInitialLowEndMode() {
   const saved = localStorage.getItem(LOW_END_KEY);
@@ -133,6 +405,7 @@ function applyAppMode() {
   drawer.classList.remove("open");
   localStorage.setItem(MODE_KEY, appMode);
   syncKidsSettingsUI();
+  syncRoutineUI();
   if (db) refresh({ keepIndex: true });
 }
 
@@ -159,37 +432,37 @@ function validPin(pin) {
 }
 
 async function setParentPin() {
-  const pin = prompt("Đặt PIN 4 số cho Chế độ của Ba:");
+  const pin = prompt("     t PIN 4 s    cho Ch          c   a Ba:");
   if (!validPin(pin)) {
-    toast("PIN cần đúng 4 số.");
+    toast("PIN c   n     ng 4 s   .");
     return;
   }
-  const confirmPin = prompt("Nhập lại PIN:");
+  const confirmPin = prompt("Nh   p l   i PIN:");
   if (pin !== confirmPin) {
-    toast("PIN nhập lại không khớp.");
+    toast("PIN nh   p l   i kh  ng kh   p.");
     return;
   }
   localStorage.setItem(PIN_HASH_KEY, await hashPin(pin));
   localStorage.setItem(PIN_ENABLED_KEY, "1");
   syncKidsSettingsUI();
-  toast("Đã bật PIN phụ huynh.");
+  toast("     b   t PIN ph    huynh.");
 }
 
 async function verifyParentPin() {
-  if (!pinEnabled()) return confirm("Thoát Chế độ của Con để về Chế độ của Ba?");
-  const pin = prompt("Nhập PIN 4 số để về Chế độ của Ba:");
+  if (!pinEnabled()) return confirm("Tho  t Ch          c   a Con       v    Ch          c   a Ba?");
+  const pin = prompt("Nh   p PIN 4 s          v    Ch          c   a Ba:");
   if (!validPin(pin)) return false;
   const ok = await hashPin(pin) === localStorage.getItem(PIN_HASH_KEY);
-  if (!ok) toast("PIN không đúng.");
+  if (!ok) toast("PIN kh  ng     ng.");
   return ok;
 }
 
 function clearParentPin() {
-  if (!confirm("Xóa PIN phụ huynh?")) return;
+  if (!confirm("X  a PIN ph    huynh?")) return;
   localStorage.removeItem(PIN_HASH_KEY);
   localStorage.setItem(PIN_ENABLED_KEY, "0");
   syncKidsSettingsUI();
-  toast("Đã xóa PIN.");
+  toast("     x  a PIN.");
 }
 
 function todayKey() {
@@ -243,10 +516,11 @@ function breakEveryCount() {
 
 function remainingKidsQuota() {
   const watched = getWatchedToday();
+  const minuteLimit = effectiveDailyMinutes();
   return {
     videos: Math.max(0, dailyLimitCount() - watched.count),
-    minutes: Math.max(0, dailyLimitMinutes() - Math.ceil(watched.seconds / 60)),
-    exhausted: dailyLimitEnabled() && (watched.count >= dailyLimitCount() || watched.seconds >= dailyLimitMinutes() * 60)
+    minutes: Math.max(0, minuteLimit - Math.ceil(watched.seconds / 60)),
+    exhausted: dailyLimitEnabled() && (watched.count >= dailyLimitCount() || watched.seconds >= minuteLimit * 60)
   };
 }
 
@@ -261,6 +535,154 @@ function loadKidsLog() {
 
 function saveKidsLog(rows) {
   localStorage.setItem(KIDS_WATCH_LOG_KEY, JSON.stringify(rows.slice(0, 100)));
+}
+
+function loadRoutineSettings() {
+  return {
+    enabled: localStorage.getItem(ROUTINE_ENABLED_KEY) === "1",
+    morning: localStorage.getItem(ROUTINE_MORNING_KEY) !== "0",
+    afternoon: localStorage.getItem(ROUTINE_AFTERNOON_KEY) !== "0",
+    evening: localStorage.getItem(ROUTINE_EVENING_KEY) !== "0",
+    noWatchAfter: localStorage.getItem(ROUTINE_NO_WATCH_AFTER_KEY) || "20:30",
+    noBeforeSleepEnabled: localStorage.getItem(ROUTINE_NO_BEFORE_SLEEP_KEY) !== "0",
+    weekendExtraMinutes: Number(localStorage.getItem(ROUTINE_WEEKEND_EXTRA_KEY) || 0)
+  };
+}
+
+function saveRoutineSettingsFromUI() {
+  localStorage.setItem(ROUTINE_ENABLED_KEY, routineEnabledToggle.checked ? "1" : "0");
+  localStorage.setItem(ROUTINE_MORNING_KEY, routineMorningToggle.checked ? "1" : "0");
+  localStorage.setItem(ROUTINE_AFTERNOON_KEY, routineAfternoonToggle.checked ? "1" : "0");
+  localStorage.setItem(ROUTINE_EVENING_KEY, routineEveningToggle.checked ? "1" : "0");
+  localStorage.setItem(ROUTINE_NO_WATCH_AFTER_KEY, noWatchAfterInput.value || "20:30");
+  localStorage.setItem(ROUTINE_NO_BEFORE_SLEEP_KEY, noBeforeSleepToggle.checked ? "1" : "0");
+  localStorage.setItem(ROUTINE_WEEKEND_EXTRA_KEY, weekendExtraSelect.value || "0");
+  syncRoutineUI();
+  renderParentDashboard();
+  renderDailySummary();
+  renderKidsHome();
+  toast("Đã lưu routine.");
+}
+
+function syncRoutineUI() {
+  if (!routineEnabledToggle) return;
+  const settings = loadRoutineSettings();
+  routineEnabledToggle.checked = settings.enabled;
+  routineMorningToggle.checked = settings.morning;
+  routineAfternoonToggle.checked = settings.afternoon;
+  routineEveningToggle.checked = settings.evening;
+  noWatchAfterInput.value = settings.noWatchAfter;
+  noBeforeSleepToggle.checked = settings.noBeforeSleepEnabled;
+  weekendExtraSelect.value = String(settings.weekendExtraMinutes);
+  childNameInput.value = localStorage.getItem(CHILD_NAME_KEY) || TEXT.childNameDefault;
+  childBirthDateInput.value = localStorage.getItem(CHILD_BIRTH_DATE_KEY) || "";
+}
+
+function saveChildProfile() {
+  localStorage.setItem(CHILD_NAME_KEY, childNameInput.value.trim() || TEXT.childNameDefault);
+  localStorage.setItem(CHILD_BIRTH_DATE_KEY, childBirthDateInput.value || "");
+  toast("Đã lưu hồ sơ của con.");
+}
+
+function routineStatus(now = new Date()) {
+  const settings = loadRoutineSettings();
+  if (!settings.enabled) return { allowed: true, reason: "Routine đang tắt.", settings };
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const afterMinutes = timeToMinutes(settings.noWatchAfter);
+  if (settings.noBeforeSleepEnabled && minutes >= afterMinutes) {
+    return { allowed: false, reason: "Tối rồi, mình để mắt nghỉ nha con.", settings };
+  }
+  const inSlot = (settings.morning && minutes >= 6 * 60 && minutes < 11 * 60)
+    || (settings.afternoon && minutes >= 13 * 60 && minutes < 17 * 60)
+    || (settings.evening && minutes >= 18 * 60 && minutes < afterMinutes);
+  return inSlot
+    ? { allowed: true, reason: "Đang trong giờ được xem.", settings }
+    : { allowed: false, reason: "Rạp chiếu đang nghỉ. Mình quay lại vào giờ xem nhé.", settings };
+}
+
+function timeToMinutes(value) {
+  const match = String(value || "20:30").match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return 20 * 60 + 30;
+  return Math.min(23 * 60 + 59, Math.max(0, Number(match[1]) * 60 + Number(match[2])));
+}
+
+function effectiveDailyMinutes() {
+  const isWeekend = [0, 6].includes(new Date().getDay());
+  return dailyLimitMinutes() + (isWeekend ? loadRoutineSettings().weekendExtraMinutes : 0);
+}
+
+function logRowsForDate(dateKey) {
+  return loadKidsLog().filter(row => String(row.watchedAt || "").slice(0, 10) === dateKey);
+}
+
+function summarizeLog(rows) {
+  const byVideo = new Map();
+  const byPlaylist = new Map();
+  let seconds = 0;
+  let completed = 0;
+  let breaks = 0;
+  for (const row of rows) {
+    seconds += Number(row.durationWatched || 0);
+    if (row.completed) completed++;
+    if (row.breakTaken) breaks++;
+    const video = videos.find(item => item.id === row.videoId);
+    const title = row.title || video?.title || "Video";
+    byVideo.set(title, (byVideo.get(title) || 0) + 1);
+    for (const playlist of playlists) {
+      if (playlist.videoIds.includes(row.videoId)) byPlaylist.set(playlist.name, (byPlaylist.get(playlist.name) || 0) + 1);
+    }
+  }
+  return {
+    rows,
+    seconds,
+    minutes: Math.ceil(seconds / 60),
+    count: rows.length,
+    completed,
+    breaks,
+    topVideo: topMapKey(byVideo),
+    topPlaylist: topMapKey(byPlaylist)
+  };
+}
+
+function topMapKey(map) {
+  let best = "";
+  let bestValue = 0;
+  for (const [key, value] of map) {
+    if (value > bestValue) {
+      best = key;
+      bestValue = value;
+    }
+  }
+  return best;
+}
+
+function familyTypeLabel(value) {
+  const labels = { family: TEXT.family, "child-memory": TEXT.childMemory, learning: TEXT.learning, music: "Nh\u1ea1c", movement: TEXT.movement, bedtime: TEXT.bedtime, reward: TEXT.reward, other: "Kh\u00e1c" };
+  return labels[value] || "Ch\u01b0a \u0111\u1eb7t";
+}
+
+function memoryQuestionFor(video) {
+  if (video.memoryQuestion) return video.memoryQuestion;
+  if (video.kidsQuestion) return video.kidsQuestion;
+  if (video.familyType === "family" || video.familyType === "child-memory") return "Con có nhớ lúc này mình đang ở đâu không?";
+  if (video.familyType === "learning") return "Con học được điều gì trong video này?";
+  if (video.familyType === "music" || video.familyType === "movement") return "Con muốn làm lại động tác đó không?";
+  if (video.familyType === "bedtime") return "Mình xem nhẹ thôi rồi nghỉ nhé con.";
+  return "Con thích đoạn nào nhất?";
+}
+
+function ageLabelFromDates(memoryDate, birthDate) {
+  if (!memoryDate || !birthDate) return "";
+  const memory = new Date(memoryDate);
+  const birth = new Date(birthDate);
+  if (!Number.isFinite(memory.getTime()) || !Number.isFinite(birth.getTime()) || memory < birth) return "";
+  let months = (memory.getFullYear() - birth.getFullYear()) * 12 + memory.getMonth() - birth.getMonth();
+  if (memory.getDate() < birth.getDate()) months -= 1;
+  const years = Math.floor(months / 12);
+  const remain = months % 12;
+  if (years <= 0) return `${Math.max(0, months)} tháng`;
+  if (!remain) return `${years} tuổi`;
+  return `${years} tuổi ${remain} tháng`;
 }
 
 function syncKidsSettingsUI() {
@@ -286,7 +708,7 @@ function resetKidsStatsToday() {
   saveWatchedToday(defaultWatchedToday());
   renderKidsHome();
   renderKidsLog();
-  toast("Đã reset thống kê hôm nay.");
+  toast("     reset th   ng k   h  m nay.");
 }
 
 function openDB() {
@@ -349,7 +771,7 @@ function getAllMetadata() {
         resolve(rows);
         return;
       }
-      rows.push(normalizeMetadata(cursor.value));
+      rows.push(normalizeMetadata(repairTextFields(cursor.value)));
       cursor.continue();
     };
     request.onerror = () => reject(request.error);
@@ -372,10 +794,56 @@ function hasBlob(id) {
   });
 }
 
+function getBlobIds() {
+  return new Promise((resolve, reject) => {
+    const ids = [];
+    const request = store(BLOB_STORE).openKeyCursor();
+    request.onsuccess = event => {
+      const cursor = event.target.result;
+      if (!cursor) {
+        resolve(ids);
+        return;
+      }
+      ids.push(cursor.key);
+      cursor.continue();
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function findOrphanMetadata(rows = videos) {
+  const blobIds = new Set(await getBlobIds());
+  return rows.filter(video => !blobIds.has(video.id));
+}
+
+async function repairLibrary({ removeOrphans = false } = {}) {
+  const orphans = await findOrphanMetadata(videos);
+  if (!removeOrphans || !orphans.length) return { orphans, removed: 0 };
+  const ids = new Set(orphans.map(video => video.id));
+  for (const id of ids) {
+    const videoEl = videoElements.get(id);
+    if (videoEl) detachVideoSource(id, videoEl);
+    const objectUrl = objectUrls.get(id);
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    objectUrls.delete(id);
+  }
+  await new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE, "readwrite");
+    const videoStore = transaction.objectStore(STORE);
+    for (const id of ids) videoStore.delete(id);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+  playlists = playlists.map(playlist => ({ ...playlist, videoIds: playlist.videoIds.filter(id => !ids.has(id)) }));
+  savePlaylists();
+  await refresh();
+  return { orphans, removed: ids.size };
+}
 function saveVideo(metadata, blob) {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE, BLOB_STORE], "readwrite");
-    transaction.objectStore(STORE).put(normalizeMetadata(metadata));
+    transaction.objectStore(STORE).put(normalizeMetadata(repairTextFields(metadata)));
     if (blob) transaction.objectStore(BLOB_STORE).put({ id: metadata.id, blob });
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
@@ -385,13 +853,20 @@ function saveVideo(metadata, blob) {
 
 function updateVideo(metadata) {
   return new Promise((resolve, reject) => {
-    const request = store(STORE, "readwrite").put(normalizeMetadata({ ...metadata, updatedAt: Date.now() }));
+    const request = store(STORE, "readwrite").put(normalizeMetadata(repairTextFields({ ...metadata, updatedAt: Date.now() })));
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
 function deleteVideo(id) {
+  const videoEl = videoElements.get(id);
+  if (videoEl) detachVideoSource(id, videoEl);
+  const objectUrl = objectUrls.get(id);
+  if (objectUrl) URL.revokeObjectURL(objectUrl);
+  objectUrls.delete(id);
+  videoElements.delete(id);
+  positionTimers.delete(id);
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE, BLOB_STORE], "readwrite");
     transaction.objectStore(STORE).delete(id);
@@ -403,6 +878,13 @@ function deleteVideo(id) {
 }
 
 function clearLibrary() {
+  for (const [id, videoEl] of videoElements) detachVideoSource(id, videoEl);
+  for (const objectUrl of objectUrls.values()) URL.revokeObjectURL(objectUrl);
+  objectUrls.clear();
+  videoElements.clear();
+  positionTimers.clear();
+  selectedDetailId = null;
+  currentIndex = 0;
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE, BLOB_STORE], "readwrite");
     transaction.objectStore(STORE).clear();
@@ -421,7 +903,7 @@ function normalizeMetadata(record) {
     id: record.id || crypto.randomUUID(),
     title,
     fileName,
-    source: record.source || "Điện thoại",
+    source: repairVietnameseText(record.source || TEXT.phoneSource) || TEXT.phoneSource,
     type: record.type || "video/*",
     size: Number(record.size || 0),
     favorite: Boolean(record.favorite),
@@ -440,7 +922,16 @@ function normalizeMetadata(record) {
     kidsEnergy: ["calm", "normal", "active"].includes(record.kidsEnergy) ? record.kidsEnergy : "normal",
     kidsAllowedTime: ["anytime", "daytime", "notBeforeSleep"].includes(record.kidsAllowedTime) ? record.kidsAllowedTime : "anytime",
     kidsQuestion: record.kidsQuestion || "",
-    kidsNote: record.kidsNote || ""
+    kidsNote: record.kidsNote || "",
+    familyType: ["family", "child-memory", "learning", "music", "movement", "bedtime", "reward", "other"].includes(record.familyType) ? record.familyType : "",
+    memoryDate: record.memoryDate || "",
+    memoryDateCode: record.memoryDateCode || "",
+    childAgeLabel: record.childAgeLabel || "",
+    familyPeople: Array.isArray(record.familyPeople) ? record.familyPeople : parseTags(record.familyPeople || ""),
+    familyLocation: record.familyLocation || "",
+    memoryNote: record.memoryNote || "",
+    memoryQuestion: record.memoryQuestion || "",
+    khoBauKyUcRef: record.khoBauKyUcRef || ""
   };
 }
 
@@ -451,7 +942,7 @@ function metadataFromFile(file) {
     id: crypto.randomUUID(),
     title: file.webkitRelativePath || fileName,
     fileName,
-    source: "Điện thoại",
+    source: TEXT.phoneSource,
     type: file.type,
     size: file.size,
     favorite: false,
@@ -530,6 +1021,8 @@ function isQuotaExceeded(error) {
 async function refresh({ keepIndex = false } = {}) {
   const oldId = visibleVideos[currentIndex]?.id;
   videos = (await getAllMetadata()).sort((a, b) => a.order - b.order || a.createdAt - b.createdAt);
+  const orphanIds = new Set((await findOrphanMetadata(videos).catch(() => [])).map(video => video.id));
+  videos = videos.filter(video => !orphanIds.has(video.id));
   applyFilters();
   if (keepIndex && oldId) currentIndex = Math.max(0, visibleVideos.findIndex(v => v.id === oldId));
   if (currentIndex < 0) currentIndex = 0;
@@ -537,10 +1030,14 @@ async function refresh({ keepIndex = false } = {}) {
   renderHomeHero();
   renderKidsHome();
   renderKidsLog();
+  renderParentDashboard();
+  renderDailySummary();
+  renderFamilyCinema();
   renderFeed();
   renderLibrary();
   updatePlaylistFilter();
   updateStorage();
+  setTimeout(encodingHealthCheck, 0);
 }
 
 function renderHomeHero() {
@@ -553,38 +1050,7 @@ function renderHomeHero() {
   heroTotalVideos.textContent = String(videos.length);
   heroTotalSize.textContent = fmt(totalSize);
   heroFavorites.textContent = String(favoriteCount);
-  heroRecent.textContent = recent?.lastPlayedAt ? recent.title : "Chưa có";
-}
-
-function renderKidsHome() {
-  kidsHome.hidden = !isKidsMode();
-  if (!isKidsMode()) return;
-  const quota = remainingKidsQuota();
-  kidsQuota.textContent = quota.exhausted
-    ? "Rạp chiếu hôm nay đóng cửa rồi. Mình nghỉ mắt nha con."
-    : `Hôm nay con còn ${quota.videos} video hoặc khoảng ${quota.minutes} phút xem.`;
-  const groups = [
-    ["Suất chiếu hôm nay", visibleVideos],
-    ["Video gia đình", visibleVideos.filter(video => video.kidsCategory === "family")],
-    ["Nhạc vui", visibleVideos.filter(video => video.kidsCategory === "music")],
-    ["Học nhẹ", visibleVideos.filter(video => video.kidsCategory === "learning")],
-    ["Yêu thích của con", visibleVideos.filter(video => video.favorite)],
-    ["Êm dịu", visibleVideos.filter(video => video.kidsEnergy === "calm")]
-  ];
-  const allowedPlaylists = playlists.filter(playlist => playlist.showInKids);
-  for (const playlist of allowedPlaylists) {
-    groups.push([playlist.name, visibleVideos.filter(video => playlist.videoIds.includes(video.id))]);
-  }
-  kidsShelves.innerHTML = groups
-    .filter(([, rows]) => rows.length)
-    .map(([name, rows]) => `<button class="kidsShelf" type="button" data-first="${esc(rows[0].id)}"><strong>${esc(name)}</strong><span>${rows.length} video</span></button>`)
-    .join("") || "<div class='hint'>Chưa có video nào được duyệt cho con.</div>";
-  for (const button of kidsShelves.querySelectorAll(".kidsShelf")) {
-    button.onclick = () => {
-      const index = visibleVideos.findIndex(video => video.id === button.dataset.first);
-      if (index >= 0) startKidsPlayback(index);
-    };
-  }
+  heroRecent.textContent = recent?.lastPlayedAt ? recent.title : TEXT.none;
 }
 
 function applyFilters() {
@@ -642,17 +1108,17 @@ function renderFeed() {
       <video playsinline ${isKidsMode() ? "" : "loop"} preload="none"></video>
       <div class="overlay">
         <h2>${esc(video.title)}</h2>
-        <p>${esc(video.source)} • ${fmt(video.size)} • <span class="statusText">${watchStatus(video)}</span></p>
+        <p>${esc(video.source)}     ${fmt(video.size)}     <span class="statusText">${watchStatus(video)}</span></p>
         <p class="timeText"><span class="currentTime">${fmtTime(video.playPosition)}</span> / <span class="durationText">${fmtTime(video.duration)}</span></p>
       </div>
       <div class="playerTools">
-        <button class="toolBtn back10" type="button">↺ 10</button>
-        <button class="toolBtn forward10" type="button">10 ↻</button>
+        <button class="toolBtn back10" type="button">    10</button>
+        <button class="toolBtn forward10" type="button">10    </button>
       </div>
       <div class="actions">
-        <button class="actionBtn fav ${video.favorite ? "active" : ""}" type="button" aria-label="Yêu thích">♥</button>
-        <button class="actionBtn edit parentOnly" type="button" aria-label="Sửa">✎</button>
-        <button class="actionBtn del parentOnly" type="button" aria-label="Xóa">🗑</button>
+        <button class="actionBtn fav ${video.favorite ? "active" : ""}" type="button" aria-label="Y  u th  ch">   </button>
+        <button class="actionBtn edit parentOnly" type="button" aria-label="S   a">   </button>
+        <button class="actionBtn del parentOnly" type="button" aria-label="X  a">    </button>
       </div>
       <button class="progress" type="button" aria-label="Seek video"><span></span></button>`;
 
@@ -733,9 +1199,9 @@ function bindVideoEvents(page, video, videoEl) {
 }
 
 function watchStatus(video) {
-  if (video.seen) return "Đã xem";
-  if (video.playPosition > 3) return "Đang xem dở";
-  return "Chưa xem";
+  if (video.seen) return TEXT.watched;
+  if (video.playPosition > 3) return TEXT.watching;
+  return TEXT.unseen;
 }
 
 async function setCurrentIndex(index) {
@@ -882,6 +1348,7 @@ function recordKidsWatch(video, videoEl, completed) {
     watchedAt: new Date().toISOString(),
     durationWatched: watchedSeconds,
     completed: Boolean(completed),
+    breakTaken: false,
     mode: "kids"
   });
   saveKidsLog(log);
@@ -889,15 +1356,18 @@ function recordKidsWatch(video, videoEl, completed) {
   renderKidsLog();
 }
 
+
 function showKidsAfterVideo(video) {
   pendingKidsNextIndex = Math.min(currentIndex + 1, visibleVideos.length - 1);
+  const question = memoryQuestionFor(video);
   kidsGateTitle.textContent = "Con vừa xem xong rồi.";
-  kidsGateQuestion.textContent = video.kidsQuestion ? `Ba hỏi con: ${video.kidsQuestion}` : "";
-  kidsGateNote.textContent = video.kidsNote || "Mình chọn xem tiếp hoặc nghỉ một chút nha.";
+  kidsGateQuestion.textContent = question ? `Ba hỏi con: ${question}` : "";
+  kidsGateNote.textContent = video.kidsNote || "Mình chọn xem tiếp hoặc nghỉ mắt chút nha.";
   breakCountdown.hidden = true;
   kidsNextBtn.hidden = false;
   kidsGate.hidden = false;
 }
+
 
 function showKidsEndScreen() {
   pendingKidsNextIndex = null;
@@ -911,6 +1381,19 @@ function showKidsEndScreen() {
 
 function showBreakScreen() {
   pendingKidsNextIndex = Math.min(currentIndex + 1, visibleVideos.length - 1);
+  const current = visibleVideos[currentIndex];
+  const log = loadKidsLog();
+  log.unshift({
+    id: crypto.randomUUID(),
+    videoId: current?.id || "",
+    title: current?.title || "Break",
+    watchedAt: new Date().toISOString(),
+    durationWatched: 0,
+    completed: false,
+    breakTaken: true,
+    mode: "kids"
+  });
+  saveKidsLog(log);
   kidsGateTitle.textContent = "Mình nghỉ mắt 30 giây nha.";
   kidsGateQuestion.textContent = "Nhìn ra xa một chút. Uống nước một ngụm.";
   kidsGateNote.textContent = "";
@@ -944,6 +1427,16 @@ function startKidsPlayback(index = 0) {
     toast("Chưa có video được duyệt cho con.");
     return;
   }
+  const routine = routineStatus();
+  if (!routine.allowed) {
+    kidsGateTitle.textContent = routine.reason;
+    kidsGateQuestion.textContent = "";
+    kidsGateNote.textContent = "Ba/Mẹ có thể đổi routine trong Chế độ của Ba.";
+    breakCountdown.hidden = true;
+    kidsNextBtn.hidden = true;
+    kidsGate.hidden = false;
+    return;
+  }
   if (remainingKidsQuota().exhausted) {
     showKidsEndScreen();
     return;
@@ -952,6 +1445,7 @@ function startKidsPlayback(index = 0) {
   hideKidsGate();
   scrollToIndex(Math.max(0, Math.min(index, visibleVideos.length - 1)));
 }
+
 
 function renderLibrary() {
   libraryList.innerHTML = visibleVideos.length ? "" : "<div class='hint'>Không có video phù hợp bộ lọc.</div>";
@@ -964,16 +1458,16 @@ function renderLibrary() {
       <div class="thumb">▶</div>
       <div class="itemMain">
         <h3>${esc(video.title)}</h3>
-        <p>${esc(fileLine)}${fmtTime(video.duration)} • ${fmt(video.size)} • ${watchStatus(video)}${video.favorite ? " • ♥" : ""}${playedLine}</p>
+        <p>${esc(fileLine)}${fmtTime(video.duration)} • ${fmt(video.size)} • ${watchStatus(video)}${video.favorite ? " • ★" : ""}${playedLine}</p>
         <p>${esc(video.note || "")}${video.tags.length ? " • #" + esc(video.tags.join(" #")) : ""}</p>
       </div>
       <div class="itemActions">
         <button class="mini play" type="button">Xem</button>
-        <button class="mini fav" type="button">${video.favorite ? "♥" : "♡"}</button>
-        <button class="mini detail" type="button">Chi tiết</button>
-        <button class="mini edit" type="button">Sửa</button>
+        <button class="mini fav" type="button">${video.favorite ? "★" : "☆"}</button>
+        <button class="mini detail" type="button">${TEXT.details}</button>
+        <button class="mini edit" type="button">${TEXT.edit}</button>
         <button class="mini playlist" type="button">+PL</button>
-        <button class="mini del" type="button">🗑</button>
+        <button class="mini del" type="button">${TEXT.delete}</button>
       </div>`;
     item.querySelector(".play").onclick = () => {
       closeDrawer();
@@ -987,6 +1481,7 @@ function renderLibrary() {
     libraryList.appendChild(item);
   });
 }
+
 
 function renderKidsLog() {
   if (!kidsLogSummary || !kidsLogList) return;
@@ -1016,6 +1511,7 @@ async function toggleFavorite(id) {
   await refresh({ keepIndex: true });
 }
 
+
 async function editVideo(id) {
   const video = videos.find(item => item.id === id);
   if (!video) return;
@@ -1033,6 +1529,7 @@ async function editVideo(id) {
   await refresh({ keepIndex: true });
 }
 
+
 function showVideoDetail(id) {
   const video = videos.find(item => item.id === id);
   if (!video) return;
@@ -1040,7 +1537,7 @@ function showVideoDetail(id) {
   const playlistNames = playlists
     .filter(playlist => playlist.videoIds.includes(id))
     .map(playlist => playlist.name)
-    .join(", ") || "Chưa có";
+    .join(", ") || TEXT.none;
   detailTitle.textContent = video.title;
   detailBody.innerHTML = [
     ["Title", video.title],
@@ -1049,21 +1546,30 @@ function showVideoDetail(id) {
     ["Duration", fmtTime(video.duration)],
     ["Status", watchStatus(video)],
     ["Favorite", video.favorite ? "Có" : "Không"],
-    ["Tags", video.tags.length ? video.tags.join(", ") : "Chưa có"],
-    ["Note", video.note || "Chưa có"],
+    ["Tags", video.tags.length ? video.tags.join(", ") : TEXT.none],
+    ["Note", video.note || TEXT.none],
     ["Playlist", playlistNames],
     ["Kids Safe", video.approvedForKids ? "Cho con xem" : "Chưa duyệt"],
     ["Kids category", video.kidsCategory || "Chưa đặt"],
     ["Kids energy", kidsEnergyLabel(video.kidsEnergy)],
     ["Kids time", kidsTimeLabel(video.kidsAllowedTime)],
-    ["Kids question", video.kidsQuestion || "Chưa có"],
-    ["Kids note", video.kidsNote || "Chưa có"],
+    ["Kids question", video.kidsQuestion || TEXT.none],
+    ["Kids note", video.kidsNote || TEXT.none],
+    ["Family type", familyTypeLabel(video.familyType)],
+    ["Memory date", video.memoryDate || TEXT.none],
+    ["Child age", video.childAgeLabel || TEXT.none],
+    ["People", video.familyPeople.length ? video.familyPeople.join(", ") : TEXT.none],
+    ["Location", video.familyLocation || TEXT.none],
+    ["Memory note", video.memoryNote || TEXT.none],
+    ["Memory question", video.memoryQuestion || TEXT.none],
+    ["KHOBAUKYUC ref", video.khoBauKyUcRef || TEXT.none],
     ["Play position", fmtTime(video.playPosition)],
     ["Created", new Date(video.createdAt).toLocaleString("vi-VN")],
     ["Updated", new Date(video.updatedAt).toLocaleString("vi-VN")]
   ].map(([label, value]) => `<div class="detailRow"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join("");
   detailSheet.hidden = false;
 }
+
 
 function kidsEnergyLabel(value) {
   return value === "calm" ? "Êm" : value === "active" ? "Sôi động" : "Vừa";
@@ -1074,6 +1580,7 @@ function kidsTimeLabel(value) {
   if (value === "notBeforeSleep") return "Không xem trước giờ ngủ";
   return "Lúc nào cũng được";
 }
+
 
 async function editKidsSafe(id) {
   const video = videos.find(item => item.id === id);
@@ -1094,6 +1601,41 @@ async function editKidsSafe(id) {
   video.kidsAllowedTime = ["anytime", "daytime", "notBeforeSleep"].includes(allowedTime.trim()) ? allowedTime.trim() : "anytime";
   video.kidsQuestion = question.trim();
   video.kidsNote = note.trim();
+  await updateVideo(video);
+  showVideoDetail(id);
+  await refresh({ keepIndex: true });
+}
+
+async function editFamilyMemory(id) {
+  const video = videos.find(item => item.id === id);
+  if (!video) return;
+  const familyType = prompt("Family type: family, child-memory, learning, music, movement, bedtime, reward, other", video.familyType || "");
+  if (familyType === null) return;
+  const memoryDate = prompt("Memory date (YYYY-MM-DD):", video.memoryDate || "");
+  if (memoryDate === null) return;
+  const birthDate = localStorage.getItem(CHILD_BIRTH_DATE_KEY) || "";
+  const suggestedAge = ageLabelFromDates(memoryDate.trim(), birthDate) || video.childAgeLabel || "";
+  const childAgeLabel = prompt("Child age label:", suggestedAge);
+  if (childAgeLabel === null) return;
+  const people = prompt("People, comma separated:", video.familyPeople.join(", "));
+  if (people === null) return;
+  const location = prompt("Location:", video.familyLocation || "");
+  if (location === null) return;
+  const note = prompt("Memory note:", video.memoryNote || "");
+  if (note === null) return;
+  const question = prompt("Memory question after video:", video.memoryQuestion || "");
+  if (question === null) return;
+  const ref = prompt("KHOBAUKYUC ref text/link/id:", video.khoBauKyUcRef || "");
+  if (ref === null) return;
+  video.familyType = ["family", "child-memory", "learning", "music", "movement", "bedtime", "reward", "other"].includes(familyType.trim()) ? familyType.trim() : "";
+  video.memoryDate = memoryDate.trim();
+  video.memoryDateCode = video.memoryDate.replaceAll("-", "");
+  video.childAgeLabel = childAgeLabel.trim();
+  video.familyPeople = parseTags(people);
+  video.familyLocation = location.trim();
+  video.memoryNote = note.trim();
+  video.memoryQuestion = question.trim();
+  video.khoBauKyUcRef = ref.trim();
   await updateVideo(video);
   showVideoDetail(id);
   await refresh({ keepIndex: true });
@@ -1122,32 +1664,32 @@ function playDetailVideo() {
 }
 
 async function removeVideo(id) {
-  if (!confirm("Xóa video này khỏi bộ nhớ offline?")) return false;
+  if (!confirm("X  a video n  y kh   i b    nh    offline?")) return false;
   const videoEl = videoElements.get(id);
   if (videoEl) detachVideoSource(id, videoEl);
   await deleteVideo(id);
   playlists = playlists.map(playlist => ({ ...playlist, videoIds: playlist.videoIds.filter(videoId => videoId !== id) }));
   savePlaylists();
   await refresh();
-  toast("Đã xóa video.");
+  toast("     x  a video.");
   return true;
 }
 
 async function addFiles(files, inputEl) {
   const selected = Array.from(files || []).filter(file => file.type.startsWith("video/"));
   if (!selected.length) {
-    toast("Không tìm thấy video.");
+    toast("Kh  ng t  m th   y video.");
     if (inputEl) inputEl.value = "";
     return;
   }
 
   const totalBytes = selected.reduce((sum, file) => sum + file.size, 0);
   const largest = selected.reduce((max, file) => Math.max(max, file.size), 0);
-  let warning = `Chuẩn bị lưu ${selected.length} video, tổng ${fmt(totalBytes)}, file lớn nhất ${fmt(largest)}.`;
-  if (largest > LARGE_FILE_BYTES) warning += "\nCó video trên 200MB, lưu trên điện thoại yếu có thể rất chậm.";
-  if (totalBytes > LARGE_IMPORT_BYTES) warning += "\nTổng import trên 1GB, quota trình duyệt có thể không đủ.";
-  if (lowEndMode && largest > LOW_END_FILE_BYTES) warning += "\nChế độ máy yếu khuyến nghị mỗi video <= 150MB.";
-  warning += "\nBạn muốn tiếp tục?";
+  let warning = `Chu   n b    l  u ${selected.length} video, t   ng ${fmt(totalBytes)}, file l   n nh   t ${fmt(largest)}.`;
+  if (largest > LARGE_FILE_BYTES) warning += "\nC   video tr  n 200MB, l  u tr  n   i   n tho   i y   u c   th    r   t ch   m.";
+  if (totalBytes > LARGE_IMPORT_BYTES) warning += "\nT   ng import tr  n 1GB, quota tr  nh duy   t c   th    kh  ng      .";
+  if (lowEndMode && largest > LOW_END_FILE_BYTES) warning += "\nCh          m  y y   u khuy   n ngh    m   i video <= 150MB.";
+  warning += "\nB   n mu   n ti   p t   c?";
   if (!confirm(warning)) {
     if (inputEl) inputEl.value = "";
     return;
@@ -1177,7 +1719,7 @@ async function addFiles(files, inputEl) {
             skipped++;
             continue;
           }
-          const choice = prompt(`Video "${file.name}" có vẻ đã tồn tại.\nNhập: skip, save, all`, "skip");
+          const choice = prompt(`Video "${file.name}" c   v         t   n t   i.\nNh   p: skip, save, all`, "skip");
           const normalizedChoice = String(choice || "skip").trim().toLowerCase();
           if (normalizedChoice === "skip") {
             skipped++;
@@ -1236,22 +1778,26 @@ async function updateStorage() {
   const estimate = await getStorageEstimate();
   const persisted = await isStoragePersisted();
   const percent = estimate?.quota ? estimate.usage / estimate.quota * 100 : null;
-  const level = percent === null ? "Không rõ" : percent < 50 ? "An toàn" : percent <= 80 ? "Cần chú ý" : "Nguy hiểm";
-  const warning = buildStorageWarning(estimate, persisted, percent);
+  const level = percent === null ? TEXT.unknown : percent < 50 ? TEXT.safe : percent <= 80 ? TEXT.watch : TEXT.danger;
+  const orphans = db ? await findOrphanMetadata(videos).catch(() => []) : [];
+  const warning = orphans.length
+    ? `${orphans.length} metadata video thiếu blob. Đây là video offline bị lỗi và có thể dọn.`
+    : buildStorageWarning(estimate, persisted, percent);
 
-  storageInfo.textContent = `${videos.length} video • offline ${fmt(total)}`;
+  storageInfo.textContent = `${videos.length} video - offline ${fmt(total)}`;
   healthVideoCount.textContent = String(videos.length);
   healthOfflineSize.textContent = fmt(total);
-  healthUsage.textContent = estimate ? fmt(estimate.usage) : "Không hỗ trợ";
-  healthQuota.textContent = estimate ? fmt(estimate.quota) : "Không hỗ trợ";
-  healthPercent.textContent = percent === null ? "Không rõ" : percent.toFixed(1) + "%";
+  healthUsage.textContent = estimate ? fmt(estimate.usage) : TEXT.notSupported;
+  healthQuota.textContent = estimate ? fmt(estimate.quota) : TEXT.notSupported;
+  healthPercent.textContent = percent === null ? TEXT.unknown : percent.toFixed(1) + "%";
   healthLevel.textContent = level;
   healthLevel.className = percent !== null && percent > 80 ? "dangerText" : percent !== null && percent >= 50 ? "warn" : "good";
-  healthPersist.textContent = persisted === null ? "Trình duyệt không hỗ trợ" : persisted ? "Đã được bảo vệ" : "Chưa được bảo vệ";
+  healthPersist.textContent = persisted === null ? TEXT.notSupported : persisted ? TEXT.protectedStorage : TEXT.unprotectedStorage;
   healthPersist.className = persisted ? "good" : "warn";
   healthWarning.textContent = warning;
   healthWarning.hidden = !warning;
   persistBtn.hidden = !navigator.storage?.persist || persisted === true;
+  if (repairBtn) repairBtn.hidden = !orphans.length;
 }
 
 async function getStorageEstimate() {
@@ -1272,15 +1818,17 @@ async function isStoragePersisted() {
   }
 }
 
+
 function buildStorageWarning(estimate, persisted, percent) {
-  const base = "IndexedDB không phải backup vĩnh viễn. Hãy giữ video gốc ở máy/ổ cứng/cloud.";
-  if (!navigator.storage) return "Trình duyệt không hỗ trợ Storage API. " + base;
+  const base = TEXT.storageBackupWarning;
+  if (!navigator.storage) return TEXT.browserNoStorageApi + " " + base;
   if (!estimate) return "Không đọc được usage/quota. " + base;
   if (percent > 80) return "Dung lượng đang ở mức nguy hiểm trên 80% quota. " + base;
   if (percent >= 50) return "Dung lượng đã qua 50% quota, nên dọn bớt video lớn. " + base;
   if (persisted !== true) return "Persistent storage chưa được bảo vệ. " + base;
   return base;
 }
+
 
 async function requestPersistentStorage() {
   if (!navigator.storage?.persist) {
@@ -1306,9 +1854,10 @@ function savePlaylists() {
   updatePlaylistFilter();
 }
 
+
 function updatePlaylistFilter() {
   const current = playlistFilter.value;
-  playlistFilter.innerHTML = '<option value="all">Mọi playlist</option>';
+  playlistFilter.innerHTML = '<option value="all">' + TEXT.allPlaylists + '</option>';
   for (const playlist of playlists) {
     const option = document.createElement("option");
     option.value = playlist.id;
@@ -1317,6 +1866,7 @@ function updatePlaylistFilter() {
   }
   playlistFilter.value = playlists.some(item => item.id === current) ? current : "all";
 }
+
 
 function createPlaylist() {
   const name = prompt("Tên playlist mới:");
@@ -1331,6 +1881,7 @@ function selectedPlaylist() {
   return playlists.find(playlist => playlist.id === playlistFilter.value) || null;
 }
 
+
 function renameSelectedPlaylist() {
   const playlist = selectedPlaylist();
   if (!playlist) {
@@ -1343,6 +1894,7 @@ function renameSelectedPlaylist() {
   savePlaylists();
   refresh({ keepIndex: true });
 }
+
 
 function deleteSelectedPlaylist() {
   const playlist = selectedPlaylist();
@@ -1358,6 +1910,7 @@ function deleteSelectedPlaylist() {
   toast("Đã xóa playlist.");
 }
 
+
 function toggleSelectedPlaylistKids() {
   const playlist = selectedPlaylist();
   if (!playlist) {
@@ -1369,6 +1922,7 @@ function toggleSelectedPlaylistKids() {
   renderKidsHome();
   toast(playlist.showInKids ? "Playlist sẽ hiện trong Kids Mode." : "Playlist đã ẩn khỏi Kids Mode.");
 }
+
 
 function addVideoToPlaylist(videoId) {
   let playlist = selectedPlaylist() || playlists[0];
@@ -1393,6 +1947,166 @@ function addVideoToPlaylist(videoId) {
   toast("Đã thêm vào playlist.");
 }
 
+
+function renderKidsHome() {
+  kidsHome.hidden = !isKidsMode();
+  if (!isKidsMode()) return;
+  const routine = routineStatus();
+  if (!routine.allowed) {
+    kidsQuota.textContent = routine.reason;
+    kidsShelves.innerHTML = "<div class='hint'>Rạp chiếu đang nghỉ. Mình quay lại vào giờ xem nhé.</div>";
+    return;
+  }
+  const quota = remainingKidsQuota();
+  kidsQuota.textContent = quota.exhausted
+    ? "Rạp chiếu hôm nay đóng cửa rồi. Mình nghỉ mắt nha con."
+    : `Hôm nay còn ${quota.videos} video hoặc khoảng ${quota.minutes} phút xem.`;
+  const familyRows = visibleVideos.filter(video => video.familyType === "family" || video.familyType === "child-memory");
+  const groups = [
+    ["Gia đình mình", familyRows],
+    ["Video của con", visibleVideos.filter(video => video.familyType === "child-memory")],
+    ["Ba/Mẹ chọn cho con", visibleVideos],
+    [TEXT.learning, visibleVideos.filter(video => video.familyType === "learning" || video.kidsCategory === "learning")],
+    ["Nhạc/vận động", visibleVideos.filter(video => ["music", "movement"].includes(video.familyType) || video.kidsCategory === "music")],
+    [TEXT.reward, visibleVideos.filter(video => video.familyType === "reward")],
+    ["Yêu thích của con", visibleVideos.filter(video => video.favorite)],
+    ["Êm dịu", visibleVideos.filter(video => video.kidsEnergy === "calm")]
+  ];
+  for (const playlist of playlists.filter(playlist => playlist.showInKids)) {
+    groups.push([playlist.name, visibleVideos.filter(video => playlist.videoIds.includes(video.id))]);
+  }
+  kidsShelves.innerHTML = groups
+    .filter(([, rows]) => rows.length)
+    .map(([name, rows]) => `<button class="kidsShelf" type="button" data-first="${esc(rows[0].id)}"><strong>${esc(name)}</strong><span>${rows.length} video</span></button>`)
+    .join("") || "<div class='hint'>Chưa có video nào được duyệt cho con.</div>";
+  for (const button of kidsShelves.querySelectorAll(".kidsShelf")) {
+    button.onclick = () => {
+      const index = visibleVideos.findIndex(video => video.id === button.dataset.first);
+      if (index >= 0) startKidsPlayback(index);
+    };
+  }
+}
+
+
+function renderParentDashboard() {
+  if (!parentDashboard) return;
+  const today = summarizeLog(logRowsForDate(todayKey()));
+  const quota = remainingKidsQuota();
+  const routine = routineStatus();
+  const recent = loadKidsLog().slice(0, 5);
+  const overLimit = dailyLimitEnabled() && (today.count > dailyLimitCount() || today.minutes > effectiveDailyMinutes());
+  parentDashboard.innerHTML = `
+    <div class="statGrid">
+      <div class="statCard"><span>${TEXT.minutesToday}</span><strong>${today.minutes}</strong></div>
+      <div class="statCard"><span>${TEXT.videosWatched}</span><strong>${today.count}</strong></div>
+      <div class="statCard"><span>${TEXT.videosCompleted}</span><strong>${today.completed}</strong></div>
+      <div class="statCard"><span>${TEXT.breakCount}</span><strong>${today.breaks}</strong></div>
+      <div class="statCard"><span>${TEXT.remaining}</span><strong>${quota.minutes} phút / ${quota.videos} video</strong></div>
+      <div class="statCard"><span>Routine</span><strong>${esc(routine.allowed ? TEXT.allowed : TEXT.blocked)}</strong></div>
+    </div>
+    <div class="dashboardSection"><h4>${TEXT.lastSevenDays}</h4><div class="miniBars">${lastSevenDaySummaries().map(day => renderMiniBar(day)).join("")}</div></div>
+    <div class="dashboardSection">
+      <h4>${TEXT.content}</h4>
+      <p>${TEXT.topVideo}: ${esc(today.topVideo || TEXT.none)}</p>
+      <p>${TEXT.topPlaylist}: ${esc(today.topPlaylist || TEXT.none)}</p>
+      <p>${TEXT.recentItems}: ${esc(recent.map(row => row.title).filter(Boolean).slice(0, 3).join(", ") || TEXT.none)}</p>
+    </div>
+    <div class="dashboardSection"><h4>${TEXT.routineStatus}</h4><p>${esc(routine.reason)} ${overLimit ? "Đã vượt giới hạn hôm nay." : "Chưa vượt giới hạn."}</p></div>
+    <div class="dashboardSection"><h4>${TEXT.contentBalance}</h4>${renderContentBalance()}</div>`;
+}
+
+function lastSevenDaySummaries() {
+  const rows = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    rows.push({ key, label: `${d.getDate()}/${d.getMonth() + 1}`, ...summarizeLog(logRowsForDate(key)) });
+  }
+  return rows;
+}
+
+function renderMiniBar(day) {
+  const limit = Math.max(1, effectiveDailyMinutes());
+  const percent = Math.min(100, day.minutes / limit * 100);
+  const over = dailyLimitEnabled() && day.minutes > limit;
+  return `<div class="miniBar"><span>${esc(day.label)}</span><span><i style="width:${percent}%"></i></span><strong class="${over ? "dangerText" : ""}">${day.minutes}p</strong></div>`;
+}
+
+
+function renderDailySummary() {
+  if (!dailySummary) return;
+  const today = summarizeLog(logRowsForDate(todayKey()));
+  const over = dailyLimitEnabled() && (today.count > dailyLimitCount() || today.minutes > effectiveDailyMinutes());
+  const activeCount = today.rows.filter(row => {
+    const video = videos.find(item => item.id === row.videoId);
+    return video?.kidsEnergy === "active" || video?.familyType === "movement";
+  }).length;
+  const hint = over ? "Hôm nay nên giảm một chút." : activeCount >= 2 ? "Con xem nhiều video sôi động, tối nên chọn video êm hơn." : "Hôm nay ổn.";
+  dailySummary.innerHTML = `
+    <div class="dashboardSection">
+      <p>Con đã xem ${today.minutes} phút.</p>
+      <p>Con đã xem ${today.count} video.</p>
+      <p>Playlist chính: ${esc(today.topPlaylist || TEXT.none)}.</p>
+      <p>Nghỉ mắt: ${today.breaks ? "có" : "chưa ghi nhận"}.</p>
+      <p>Vượt giới hạn: ${over ? "có" : "không"}.</p>
+      <p>Gợi ý: ${esc(hint)}</p>
+    </div>`;
+}
+
+
+function renderContentBalance() {
+  const approved = videos.filter(video => video.approvedForKids);
+  if (!approved.length) return "<p>Chưa có video duyệt cho con.</p>";
+  const count = predicate => approved.filter(predicate).length;
+  const groups = [
+    ["Gia đình/ký ức", count(video => video.familyType === "family" || video.familyType === "child-memory"), "mục tiêu 40%"],
+    [TEXT.learning, count(video => video.familyType === "learning" || video.kidsCategory === "learning"), "mục tiêu 30%"],
+    ["Nhạc/vận động", count(video => ["music", "movement"].includes(video.familyType) || video.kidsCategory === "music"), "mục tiêu 20%"],
+    ["Thưởng/khác", count(video => video.familyType === "reward" || video.familyType === "other" || !video.familyType), "mục tiêu 10%"]
+  ];
+  return `<div class="balanceList">${groups.map(([name, amount, target]) => `<p>${esc(name)}: ${Math.round(amount / approved.length * 100)}% (${esc(target)})</p>`).join("")}</div>`;
+}
+
+
+function renderFamilyCinema() {
+  if (!familyCinemaList) return;
+  let rows = videos.filter(video => video.familyType || video.memoryDate || video.childAgeLabel || video.memoryNote);
+  if (familyFilter.value === "child") rows = rows.filter(video => video.familyType === "child-memory");
+  if (familyFilter.value === "learning") rows = rows.filter(video => video.familyType === "learning");
+  if (familyFilter.value === "bedtime") rows = rows.filter(video => video.familyType === "bedtime");
+  if (familyFilter.value === "reward") rows = rows.filter(video => video.familyType === "reward");
+  rows.sort((a, b) => {
+    if (familySort.value === "oldest") return String(a.memoryDate || "").localeCompare(String(b.memoryDate || ""));
+    if (familySort.value === "age") return String(a.childAgeLabel || "").localeCompare(String(b.childAgeLabel || ""), "vi");
+    return String(b.memoryDate || "").localeCompare(String(a.memoryDate || ""));
+  });
+  familyCinemaList.innerHTML = rows.length ? "" : `<div class='hint'>${TEXT.noFamilyMetadata}</div>`;
+  for (const video of rows) {
+    const item = document.createElement("div");
+    item.className = "item";
+    item.innerHTML = `
+      <div class="thumb">▶</div>
+      <div class="itemMain">
+        <h3>${esc(video.title)}</h3>
+        <p>${esc(familyTypeLabel(video.familyType))} • ${esc(video.memoryDate || TEXT.noDate)} • ${esc(video.childAgeLabel || TEXT.noAge)}</p>
+        <p>${esc(video.familyLocation || "")}${video.familyPeople.length ? " • " + esc(video.familyPeople.join(", ")) : ""}</p>
+      </div>
+      <div class="itemActions">
+        <button class="mini detail" type="button">${TEXT.details}</button>
+        <button class="mini play" type="button">Xem</button>
+      </div>`;
+    item.querySelector(".detail").onclick = () => showVideoDetail(video.id);
+    item.querySelector(".play").onclick = () => {
+      closeDrawer();
+      const index = visibleVideos.findIndex(item => item.id === video.id);
+      scrollToIndex(index >= 0 ? index : 0);
+    };
+    familyCinemaList.appendChild(item);
+  }
+}
+
 function exportMetadata() {
   const payload = {
     app: "Offline Cinema",
@@ -1408,7 +2122,13 @@ function exportMetadata() {
       breakReminderEnabled: breakReminderEnabled(),
       breakEvery: breakEveryCount(),
       pinEnabled: pinEnabled()
-    }
+    },
+    routineSettings: loadRoutineSettings(),
+    childProfile: {
+      childName: localStorage.getItem(CHILD_NAME_KEY) || TEXT.childNameDefault,
+      childBirthDate: localStorage.getItem(CHILD_BIRTH_DATE_KEY) || ""
+    },
+    watchLog: loadKidsLog()
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }));
   const a = document.createElement("a");
@@ -1460,6 +2180,33 @@ async function importMetadataFile(file) {
     if (payload.kidsSettings.breakEvery) localStorage.setItem(BREAK_EVERY_KEY, String(payload.kidsSettings.breakEvery));
     syncKidsSettingsUI();
   }
+  if (payload.routineSettings && typeof payload.routineSettings === "object") {
+    localStorage.setItem(ROUTINE_ENABLED_KEY, payload.routineSettings.enabled ? "1" : "0");
+    localStorage.setItem(ROUTINE_MORNING_KEY, payload.routineSettings.morning === false ? "0" : "1");
+    localStorage.setItem(ROUTINE_AFTERNOON_KEY, payload.routineSettings.afternoon === false ? "0" : "1");
+    localStorage.setItem(ROUTINE_EVENING_KEY, payload.routineSettings.evening === false ? "0" : "1");
+    if (payload.routineSettings.noWatchAfter) localStorage.setItem(ROUTINE_NO_WATCH_AFTER_KEY, String(payload.routineSettings.noWatchAfter));
+    localStorage.setItem(ROUTINE_NO_BEFORE_SLEEP_KEY, payload.routineSettings.noBeforeSleepEnabled === false ? "0" : "1");
+    if (payload.routineSettings.weekendExtraMinutes !== undefined) localStorage.setItem(ROUTINE_WEEKEND_EXTRA_KEY, String(payload.routineSettings.weekendExtraMinutes));
+    syncRoutineUI();
+  }
+  if (payload.childProfile && typeof payload.childProfile === "object") {
+    if (payload.childProfile.childName) localStorage.setItem(CHILD_NAME_KEY, String(payload.childProfile.childName));
+    if (payload.childProfile.childBirthDate !== undefined) localStorage.setItem(CHILD_BIRTH_DATE_KEY, String(payload.childProfile.childBirthDate));
+    syncRoutineUI();
+  }
+  if (Array.isArray(payload.watchLog)) {
+    saveKidsLog(payload.watchLog.map(row => ({
+      id: row.id || crypto.randomUUID(),
+      videoId: row.videoId || "",
+      title: row.title || "Video",
+      watchedAt: row.watchedAt || new Date().toISOString(),
+      durationWatched: Number(row.durationWatched || 0),
+      completed: Boolean(row.completed),
+      breakTaken: Boolean(row.breakTaken),
+      mode: row.mode || "kids"
+    })));
+  }
   metadataInput.value = "";
   await refresh();
   toast(`Import metadata: merge ${merged}, bỏ qua ${skipped} mục thiếu video blob.`, 4600);
@@ -1492,6 +2239,15 @@ fileInput.onchange = event => addFiles(event.target.files, event.target);
 folderInput.onchange = event => addFiles(event.target.files, event.target);
 metadataInput.onchange = event => importMetadataFile(event.target.files?.[0]).catch(() => toast("File metadata không hợp lệ.", 3600));
 persistBtn.onclick = requestPersistentStorage;
+repairBtn.onclick = async () => {
+  if (!confirm("Dọn metadata video lỗi không có blob?")) return;
+  const result = await repairLibrary({ removeOrphans: true }).catch(error => ({ error }));
+  if (result.error) {
+    toast("Dọn video lỗi thất bại.", 3600);
+    return;
+  }
+  toast(`Dọn xong: đã xóa ${result.removed} video lỗi.`, 3600);
+};
 cancelImportBtn.onclick = () => {
   cancelImport = true;
   toast("Sẽ hủy sau file hiện tại.");
@@ -1510,7 +2266,7 @@ for (const chip of document.querySelectorAll("#filterChips .chip")) {
 $("muteBtn").onclick = () => {
   muted = !muted;
   for (const videoEl of videoElements.values()) videoEl.muted = muted;
-  $("muteBtn").textContent = muted ? "🔇" : "🔊";
+  $("muteBtn").textContent = muted ? "    " : "    ";
 };
 $("newPlaylistBtn").onclick = () => {
   createPlaylist();
@@ -1521,13 +2277,13 @@ $("toggleKidsPlaylistBtn").onclick = toggleSelectedPlaylistKids;
 $("deletePlaylistBtn").onclick = deleteSelectedPlaylist;
 $("exportBtn").onclick = exportMetadata;
 $("clearBtn").onclick = async () => {
-  if (!confirm("Xóa toàn bộ video offline? Metadata và video blob sẽ bị xóa khỏi IndexedDB.")) return;
+  if (!confirm("X  a to  n b    video offline? Metadata v   video blob s    b    x  a kh   i IndexedDB.")) return;
   for (const [id, videoEl] of videoElements) detachVideoSource(id, videoEl);
   await clearLibrary();
   playlists = [];
   savePlaylists();
   await refresh();
-  toast("Đã xóa thư viện.");
+  toast("     x  a th   vi   n.");
 };
 searchInput.oninput = () => refresh({ keepIndex: true });
 sortSelect.onchange = () => refresh({ keepIndex: true });
@@ -1540,6 +2296,7 @@ $("detailCloseBtn").onclick = closeVideoDetail;
 detailPlayBtn.onclick = playDetailVideo;
 detailEditBtn.onclick = () => selectedDetailId && editVideo(selectedDetailId);
 detailKidsBtn.onclick = () => selectedDetailId && editKidsSafe(selectedDetailId);
+detailFamilyBtn.onclick = () => selectedDetailId && editFamilyMemory(selectedDetailId);
 detailPlaylistBtn.onclick = () => selectedDetailId && addVideoToPlaylist(selectedDetailId);
 detailDeleteBtn.onclick = () => {
   if (!selectedDetailId) return;
@@ -1598,17 +2355,36 @@ kidsStopBtn.onclick = () => {
 window.addEventListener("online", () => toast("Đã có internet."));
 window.addEventListener("offline", () => toast("Đang ở chế độ offline."));
 
+saveRoutineBtn.onclick = saveRoutineSettingsFromUI;
+saveChildProfileBtn.onclick = saveChildProfile;
+familyFilter.onchange = renderFamilyCinema;
+familySort.onchange = renderFamilyCinema;
+
+window.offlineCinemaDebug = {
+  appVersion: APP_VERSION,
+  scanBadText,
+  scanVisibleText,
+  repairTextMetadata: async (options = {}) => { const result = await repairTextMetadata({ force: true, ...options }); await refresh(); return result; },
+  findOrphans: () => findOrphanMetadata(videos),
+  repairOrphans: async () => { if (!confirm("Dọn metadata video lỗi không có blob?")) return { cancelled: true }; return repairLibrary({ removeOrphans: true }); },
+  countMetadata,
+  countBlobs
+};
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.7.0").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=1.9.4").catch(() => {}));
 }
 
 (async () => {
   try {
+    applyStaticText();
     applyLowEndMode();
     applyAppMode();
     db = await openDB();
+    const badBeforeRepair = scanBadTextInMetadata(await getAllMetadata()).length;
+    if (localStorage.getItem("offlineCinema.textRepairVersion") !== TEXT_REPAIR_VERSION || badBeforeRepair) await repairTextMetadata();
     updatePlaylistFilter();
     syncKidsSettingsUI();
+    syncRoutineUI();
     await refresh();
   } catch (error) {
     toast("Không mở được thư viện IndexedDB trên trình duyệt này.", 4200);
